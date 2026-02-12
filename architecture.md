@@ -1,7 +1,9 @@
----
-title: Architecture
-layout: default
----
+# Homelab Architecture Overview
+
+My homelab is designed as a modular, reproducible platform that mirrors real-world cloud engineering environments.  
+It focuses on automation, security, observability, and clear separation of concerns.
+
+This page provides a high-level overview of the core components, design principles, and system layout.
 
 ```mermaid
 
@@ -96,14 +98,6 @@ flowchart TD
     DMZ --> Traefik
     STORAGE --> PBS
 ```
-
-# Homelab Architecture Overview
-
-My homelab is designed as a modular, reproducible platform that mirrors real-world cloud engineering environments.  
-It focuses on automation, security, observability, and clear separation of concerns.
-
-This page provides a high-level overview of the core components, design principles, and system layout.
-
 ---
 
 # 🧭 Design Principles
