@@ -1,261 +1,96 @@
-# Homelab Architecture Overview
+---
+layout: default
+title: Architecture Overview
+nav_order: 2
+---
 
-My homelab is designed as a modular, reproducible platform that mirrors real-world cloud engineering environments.  
-It focuses on automation, security, observability, and clear separation of concerns.
+# 🏗️ Homelab Architecture Overview
 
-This page provides a high-level overview of the core components, design principles, and system layout.
+My homelab is designed as a modular, reproducible platform that mirrors real-world cloud engineering environments. It focuses on automation, security, observability, and clear separation of concerns, optimized for my specific hardware limitations.
 
-```mermaid
+The entire infrastructure is managed as code, ensuring that the lab can be redeployed from scratch without manual intervention.
 
-flowchart LR
-
-    subgraph SRV1["SRV-1 (Bare Metal Control & Docker Host)"]
-        DockerHost["Docker Engine"]
-        Restic["Restic (local + USB backups)"]
-        PBS["Proxmox Backup Server (PBS)"]
-        Semaphore["Semaphore (Ansible & Terraform control plane)"]
-        Snap1["Local Snapshots (Filesystem)"]
-    end
-
-    subgraph DockerStack["Docker Stack on SRV-1"]
-        CF["Cloudflared Tunnel"]
-        Traefik["Traefik Reverse Proxy"]
-        Crowdsec["CrowdSec"]
-        CFBouncer["CF Bouncer"]
-        Monitoring["Prometheus + Grafana + cAdvisor + Node Exporter"]
-        Logging["Promtail + Loki"]
-        Dozzle["Dozzle (Container Logs UI)"]
-        BentoPDF["App: bentopdf"]
-    end
-
-    subgraph SRV2["SRV-2 (Proxmox Virtualization Host)"]
-        Proxmox["Proxmox VE"]
-        VMStack["VMs/LXCs: Jellyfin, *arr, WP sites, StirlingPDF, Vaultwarden, etc."]
-        Snap2["Proxmox Snapshots"]
-    end
-
-    subgraph Network["Network (VLANs planned)"]
-        MGMT["Management VLAN"]
-        APPS["Apps VLAN"]
-        DMZ["DMZ / Ingress VLAN"]
-        STORAGE["Storage VLAN"]
-    end
-
-    subgraph Backup["Backup & DR"]
-        USBSSD["USB External SSD (Local Backup Media)"]
-        ResticRepo["Restic Repositories"]
-        PBSStorage["PBS Datastore"]
-        CloudDR["Future Cloud Backups (S3/B2)"]
-    end
-
-    subgraph Observability["Observability"]
-        Metrics["Prometheus Metrics"]
-        Dashboards["Grafana Dashboards"]
-        Logs["Loki Logs"]
-        ContainersUI["Dozzle UI"]
-    end
-
-    %% Connections
-    CF --> Traefik
-    Traefik --> BentoPDF
-    Traefik --> Monitoring
-    Traefik --> Dozzle
-
-    DockerHost --> CF
-    DockerHost --> Traefik
-    DockerHost --> Crowdsec
-    Crowdsec --> CFBouncer
-
-    DockerHost --> Monitoring
-    DockerHost --> Logging
-
-    SRV1 --> Restic
-    SRV1 --> PBS
-    SRV1 --> Semaphore
-    SRV1 --> Snap1
-
-    SRV2 --> Proxmox
-    Proxmox --> VMStack
-    SRV2 --> Snap2
-
-    Restic --> ResticRepo
-    ResticRepo --> USBSSD
-    PBS --> PBSStorage
-    PBSStorage --> USBSSD
-
-    ResticRepo --> CloudDR
-    PBSStorage --> CloudDR
-
-    Monitoring --> Metrics
-    Monitoring --> Dashboards
-    Logging --> Logs
-    Dozzle --> ContainersUI
-
-    MGMT --> SRV1
-    MGMT --> SRV2
-    APPS --> DockerHost
-    APPS --> VMStack
-    DMZ --> Traefik
-    STORAGE --> PBS
-```
 ---
 
 # 🧭 Design Principles
 
-- **Modularity** — each service is isolated and replaceable  
-- **Reproducibility** — everything is automated with Ansible and declarative configs  
-- **Security-first** — network segmentation, least-privilege access, zero-trust tunnels  
-- **Observability** — metrics, logs, and monitoring across all layers  
-- **Resilience** — backups, snapshots, and disaster recovery workflows  
-- **Cloud-aligned** — architecture mirrors AWS/Azure/GCP patterns  
+* **Modularity** — Services are containerized, isolated, and replaceable.
+* **Reproducibility** — Infrastructure is automated with Ansible and Terraform, utilizing declarative configurations.
+* **Security-first** — Network segmentation, least-privilege access, and zero-trust tunneling are enforced.
+* **Observability** — Comprehensive metrics and logging are enabled across all layers.
+* **Resilience** — Automated backup workflows ensure data integrity and disaster recovery.
 
 ---
 
-# 🏗️ High-Level Architecture Diagram
+# 🛡️ High-Level Security Architecture
 
-*A visual diagram will be added here.*
+This diagram illustrates the logical separation of concerns and the traffic flow from the internet to the application layer.
 
-The architecture consists of:
+```mermaid
+flowchart LR
+    %% Zone Definitions
+    subgraph Internet
+        User[Internet User]
+    end
 
-- A Proxmox virtualization layer  
-- A Docker application stack  
-- A Traefik reverse proxy  
-- Cloudflared tunnels for secure external access  
-- A segmented network with dedicated VLANs  
-- Monitoring and alerting via Prometheus  
-- Backup and disaster recovery using Restic and Proxmox Backup Server  
+    subgraph DMZ_VLAN[DMZ VLAN - Ingress]
+        Tunnel[Cloudflare Tunnel]
+        Traefik[Traefik Proxy]
+        CrowdSec[CrowdSec & Bouncer]
+    end
 
+    subgraph APP_VLAN[App VLAN - Services]
+        Media[Jellyfin + arr]
+        Docs[StirlingPDF]
+    end
+    
+    subgraph SECURE_VLAN[Secure App VLAN]
+        Vault[Vaultwarden]
+    end
+
+    subgraph MGMT_VLAN[Management VLAN - Control Plane]
+        Semaphore[Semaphore Automation]
+        Proxmox[Proxmox VE]
+        PBS[Proxmox Backup Server]
+    end
+
+    subgraph Storage[Backup Storage]
+        USBSSD[USB External SSD]
+    end
+
+    %% Interactions
+    User -->|HTTPS| Tunnel
+    Tunnel --> Traefik
+    Traefik <--> CrowdSec
+    Traefik -->|Isolated Network| Vault
+    Traefik -->|Isolated Network| Media
+    Traefik -->|Isolated Network| Docs
+
+    Semaphore -.->|Provision| Proxmox
+    Semaphore -.->|Configure| DMZ_VLAN
+    
+    %% Backups
+    PBS -->|VM/LXC Backups| USBSSD
+    
+    style DMZ_VLAN fill:#ffe0b2,stroke:#fb8c00,stroke-width:2px
+    style APP_VLAN fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    style SECURE_VLAN fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style MGMT_VLAN fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+```
 ---
+### 🤖 Automation & Secrets Management
 
-# 🖥️ Virtualization Layer (Proxmox)
+The lab utilizes a robust automation workflow to ensure consistency and security.
 
-Proxmox provides the core compute layer for the homelab:
-
-- KVM virtual machines  
-- LXC containers  
-- Centralized management  
-- Snapshots and scheduled backups  
-- PCI passthrough where required  
-
-This layer mirrors cloud compute primitives (EC2, Azure VM, GCE).
-
+* **IaC (Infrastructure as Code):** **Terraform** is used to provision virtual machines and resources on the Proxmox virtualization host.
+* **Configuration Management:** **Ansible** manages the OS-level configurations, package installations, and Docker deployments.
+* **Automation Platform:** **Semaphore** serves as the central control plane (running on bare metal for resilience), taking over automation tasks after the initial setup.
+* **Secrets Management:** All sensitive variables are stored in **Ansible Vaults**. The deployment process uses templates to populate configuration files and environment variables, ensuring no unencrypted secrets are pushed to version control.
 ---
+### 💾 Backup & Disaster Recovery
 
-# 🐳 Application Layer (Docker + Compose)
+Data resilience is achieved through a multi-layered backup strategy:
 
-Applications run inside a modular Docker stack:
+1.  **System Configuration:** **Restic** is automated to back up critical configuration files and secrets to local and external storage.
+2.  **Virtual Machines & Containers:** **Proxmox Backup Server (PBS)** manages deduplicated, scheduled backups of all virtual machines and containers to dedicated physical storage.
 
-- Each service defined in its own Compose file  
-- Shared networks for internal communication  
-- Explicit version pinning  
-- Bind mounts for persistent data  
-- Automated deployment via Ansible  
-
-This mirrors containerized workloads in ECS, EKS, AKS, and GKE.
-
----
-
-# 🌐 Networking & Reverse Proxy (Traefik)
-
-Traefik handles:
-
-- Routing  
-- TLS termination  
-- Automatic certificate management  
-- Service discovery  
-- Middleware (auth, rate limiting, headers)  
-
-All routing rules are defined declaratively via labels.
-
----
-
-# 🔐 Zero-Trust Access (Cloudflared)
-
-Cloudflared tunnels provide secure external access without exposing ports:
-
-- No inbound firewall rules  
-- Identity-based access  
-- Encrypted tunnels  
-- Integration with Traefik  
-
-This mirrors zero-trust patterns used in modern cloud environments.
-
----
-
-# 📡 Network Segmentation
-
-The homelab uses VLANs and firewall rules to isolate workloads:
-
-- **Management network** — Proxmox, PBS  
-- **Application network** — Docker services  
-- **Storage network** — NFS/SMB  
-- **DMZ** — reverse proxy and ingress  
-- **IoT/Guest networks** — isolated, restricted  
-
-This enforces least privilege and reduces blast radius.
-
----
-
-# 📊 Monitoring & Observability (Prometheus)
-
-Monitoring stack includes:
-
-- Prometheus server  
-- Node exporters  
-- cAdvisor  
-- Blackbox exporter  
-- Dashboards (Grafana planned)  
-
-This provides visibility into system health, performance, and failures.
-
----
-
-# 💾 Backup & Disaster Recovery
-
-Two backup systems ensure resilience:
-
-### **Restic**
-- Backs up configuration, secrets, and application data  
-- Encrypted repositories  
-- Automated via systemd timers or Ansible  
-
-### **Proxmox Backup Server**
-- VM and container backups  
-- Deduplication  
-- Scheduled jobs  
-- Off-host storage  
-
-This mirrors cloud backup strategies (EBS snapshots, S3 backups, etc.).
-
----
-
-# ⚙️ Automation (Ansible)
-
-Ansible automates:
-
-- VM provisioning  
-- Docker stack deployment  
-- Configuration management  
-- Backup setup  
-- System updates  
-- Secrets management (Vault)  
-
-This ensures the entire homelab is reproducible from scratch.
-
----
-
-# 🚀 Future Improvements
-
-- Add Terraform for infrastructure provisioning  
-- Introduce Kubernetes (K3s or Talos)  
-- Expand monitoring with Grafana dashboards  
-- Implement centralized logging (Loki or ELK)  
-- Add CI/CD pipelines for automated deployments  
-
----
-
-# 📁 Related Pages
-
-- 👉 [Projects](projects.md)  
-- 👉 [Documentation](docs.md)  
-- 👉 [Home](index.md)  
