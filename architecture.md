@@ -1,3 +1,4 @@
+'''mermaid
 flowchart TD
 
     subgraph SRV1["SRV-1 (Bare Metal Control & Docker Host)"]
@@ -88,6 +89,7 @@ flowchart TD
     APPS --> VMStack
     DMZ --> Traefik
     STORAGE --> PBS
+    '''
 
 # Homelab Architecture Overview
 
