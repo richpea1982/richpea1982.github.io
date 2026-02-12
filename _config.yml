@@ -5,7 +5,3 @@ remote_theme: just-the-docs/just-the-docs
 # 1. Enable Mermaid in the theme
 mermaid:
   enabled: true
-
-# 2. Add the plugin for building the site
-plugins:
-  - jekyll-mermaid
