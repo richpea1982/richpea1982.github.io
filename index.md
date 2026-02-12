@@ -12,7 +12,7 @@ I am a DevOps and Cloud Engineering enthusiast focused on designing and building
 ---
 
 ### 🌐 Portfolio Navigation
-* 🏗️ **[Architecture Overview](architecture-overview.md)** — High-level layout, security zones, and design principles.
+* 🏗️ **[Edge Networking](edge-networking.md)** — High-level layout, security zones, and design principles.
 * 🔧 **[Technical Architecture](architecture-technical.md)** — Deep dive into host-to-host connectivity, container networking, and backup flows.
 * 🛠️ **[Automation & IaC](automation.md)** — Deep dive into Ansible roles, Terraform, and secrets management.
 * 🚀 **[Key Projects](projects.md)** — Walkthroughs of reverse proxies, monitoring, and backup strategies.
