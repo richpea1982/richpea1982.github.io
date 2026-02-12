@@ -91,7 +91,8 @@ flowchart TD
     APPS --> VMStack
     DMZ --> Traefik
     STORAGE --> PBS
-{% endraw %}```
+```
+{% endraw %}
 
 # Homelab Architecture Overview
 
