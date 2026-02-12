@@ -1,62 +1,29 @@
-# Richard Pearsall  
+---
+layout: default
+title: Home
+nav_order: 1
+---
+
+# Richard Pearsall
 **Cloud Engineering | Automation | Linux | Infrastructure-as-Code**
 
-I design and build reproducible, automated infrastructure using Linux, Docker, Ansible, and Proxmox.  
-My homelab is a fully documented, modular environment that mirrors real-world cloud engineering practices:  
-network segmentation, reverse proxies, monitoring, backups, automation, and declarative configuration.
-
-This site showcases my architecture, projects, and documentation.
+I am a DevOps and Cloud Engineering enthusiast focused on designing and building reproducible, automated infrastructure. Through my comprehensive homelab environment, I validate and implement real-world cloud engineering practices—including **security-first networking, infrastructure-as-code, and resilient automated backups**—mirroring enterprise-level modularity and separation of concerns.
 
 ---
 
-## 🔧 Core Competencies
-- Linux systems engineering  
-- Infrastructure-as-Code (Ansible, Terraform)  
-- Containerization (Docker)  
-- Virtualization (Proxmox/KVM)  
-- Monitoring & observability (Prometheus, Grafana, Dozzle)  
-- Backup & disaster recovery (Restic, PBS)  
-- Secure networking & zero-trust access (Cloudflared, Crowdsec, Cloudflare-Bouncer)  
+### 🌐 Portfolio Navigation
+* 🏗️ **[Architecture Overview](architecture-overview.md)** — High-level layout, security zones, and design principles.
+* 🔧 **[Technical Architecture](architecture-technical.md)** — Deep dive into host-to-host connectivity, container networking, and backup flows.
+* 🛠️ **[Automation & IaC](automation.md)** — Deep dive into Ansible roles, Terraform, and secrets management.
+* 🚀 **[Key Projects](projects.md)** — Walkthroughs of reverse proxies, monitoring, and backup strategies.
+* 🔗 **[GitHub](https://github.com/richpea1982)** — Infrastructure-as-Code repositories.
 
 ---
 
-## 🏗️ Homelab Architecture
-A high-level overview of my homelab design, including:
-- Proxmox virtualization  
-- Docker application stack  
-- Traefik reverse proxy  
-- Cloudflared tunnels  
-- Monitoring and alerting  
-- Backup strategy  
-- Network segmentation  
-
-👉 **[View the full architecture](architecture.md)**
+### 🔧 Core Competencies
+Linux · Ansible · Terraform · Docker · Proxmox · Monitoring · Restic · Traefik · Zero-Trust
 
 ---
 
-## 📁 Projects
-A curated list of my key homelab and automation projects.
-
-- **Reverse Proxy & Zero-Trust Access** — Traefik + Cloudflared  
-- **Automated WordPress Deployment** — Ansible + Docker  
-- **Monitoring Stack** — Prometheus + exporters  
-- **Backup & DR Strategy** — Restic + PBS  
-- **Network Segmentation** — VLANs, firewall rules  
-- **Infrastructure Automation** — Modular Ansible roles  
-
-👉 **[View all projects](projects.md)**
-
----
-
-## 📚 Documentation
-I maintain detailed documentation for all components of my homelab, including architecture decisions, troubleshooting notes, and automation workflows.
-
-👉 **[Documentation index](docs.md)**
-
----
-
-## 📬 Contact
-- **GitHub:** https://github.com/<your-username>  
-- **LinkedIn:** <your-link>  
-- **Email:** <your-email>  
-
+### 📬 Contact
+[GitHub](https://github.com/richpea1982) | [LinkedIn](www.linkedin.com/in/richard-pearsall-960392388) | [Email](rpearsall1982@gmail.com)
