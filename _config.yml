@@ -1,9 +1,16 @@
+title: "Richard Pearsall"
+description: "Cloud Engineering | Automation | Linux | Infrastructure-as-Code"
+
+# Keep the theme for CSS only
 theme: jekyll-theme-minimal
+
 markdown: GFM
 kramdown:
   input: GFM
+
 defaults:
   - scope:
       path: ""
     values:
       layout: default
+
