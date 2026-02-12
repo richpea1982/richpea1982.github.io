@@ -31,6 +31,7 @@ A high-level overview of my homelab design, including:
 - Network segmentation  
 
 👉 **[View the full architecture](architecture.md)**
+**[test](mermaid-test.md)**
 
 ---
 
