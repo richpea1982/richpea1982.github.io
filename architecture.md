@@ -1,3 +1,8 @@
+---
+title: Architecture
+layout: default
+---
+
 ```mermaid
 
 flowchart TD
