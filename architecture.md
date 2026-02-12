@@ -1,3 +1,98 @@
+## High-Level Architecture Diagram
+
+```mermaid
+flowchart TD
+
+    subgraph SRV1["SRV-1 (Bare Metal Control & Docker Host)"]
+        DockerHost["Docker Engine"]
+        Restic["Restic (local + USB backups)"]
+        PBS["Proxmox Backup Server (PBS)"]
+        Semaphore["Semaphore (Ansible & Terraform control plane)"]
+        Snap1["Local Snapshots (Filesystem)"]
+    end
+
+    subgraph DockerStack["Docker Stack on SRV-1"]
+        CF["Cloudflared Tunnel"]
+        Traefik["Traefik Reverse Proxy"]
+        Crowdsec["CrowdSec"]
+        CFBouncer["CF Bouncer"]
+        Monitoring["Prometheus + Grafana + cAdvisor + Node Exporter"]
+        Logging["Promtail + Loki"]
+        Dozzle["Dozzle (Container Logs UI)"]
+        BentoPDF["App: bentopdf"]
+    end
+
+    subgraph SRV2["SRV-2 (Proxmox Virtualization Host)"]
+        Proxmox["Proxmox VE"]
+        VMStack["VMs/LXCs: Jellyfin, *arr, WP sites, StirlingPDF, Vaultwarden, etc."]
+        Snap2["Proxmox Snapshots"]
+    end
+
+    subgraph Network["Network (VLANs planned)"]
+        MGMT["Management VLAN"]
+        APPS["Apps VLAN"]
+        DMZ["DMZ / Ingress VLAN"]
+        STORAGE["Storage VLAN"]
+    end
+
+    subgraph Backup["Backup & DR"]
+        USBSSD["USB External SSD (Local Backup Media)"]
+        ResticRepo["Restic Repositories"]
+        PBSStorage["PBS Datastore"]
+        CloudDR["Future Cloud Backups (S3/B2)"]
+    end
+
+    subgraph Observability["Observability"]
+        Metrics["Prometheus Metrics"]
+        Dashboards["Grafana Dashboards"]
+        Logs["Loki Logs"]
+        ContainersUI["Dozzle UI"]
+    end
+
+    %% Connections
+    CF --> Traefik
+    Traefik --> BentoPDF
+    Traefik --> Monitoring
+    Traefik --> Dozzle
+
+    DockerHost --> CF
+    DockerHost --> Traefik
+    DockerHost --> Crowdsec
+    Crowdsec --> CFBouncer
+
+    DockerHost --> Monitoring
+    DockerHost --> Logging
+
+    SRV1 --> Restic
+    SRV1 --> PBS
+    SRV1 --> Semaphore
+    SRV1 --> Snap1
+
+    SRV2 --> Proxmox
+    Proxmox --> VMStack
+    SRV2 --> Snap2
+
+    Restic --> ResticRepo
+    ResticRepo --> USBSSD
+    PBS --> PBSStorage
+    PBSStorage --> USBSSD
+
+    ResticRepo --> CloudDR
+    PBSStorage --> CloudDR
+
+    Monitoring --> Metrics
+    Monitoring --> Dashboards
+    Logging --> Logs
+    Dozzle --> ContainersUI
+
+    MGMT --> SRV1
+    MGMT --> SRV2
+    APPS --> DockerHost
+    APPS --> VMStack
+    DMZ --> Traefik
+    STORAGE --> PBS
+
+
 # Homelab Architecture Overview
 
 My homelab is designed as a modular, reproducible platform that mirrors real-world cloud engineering environments.  
