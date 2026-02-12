@@ -13,3 +13,40 @@
     mermaid.initialize({ startOnLoad: true, theme: 'default' });
   });
 </script>
+<style>
+  /* Makes the Mermaid container scrollable if the diagram is too wide */
+  .mermaid {
+    overflow-x: auto;
+    overflow-y: hidden;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Forces the SVG to maintain a readable scale */
+  .mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
+    min-width: 800px; /* Adjust this value if it's still too small */
+  }
+</style>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  
+  document.addEventListener('DOMContentLoaded', function () {
+    const blocks = document.querySelectorAll('pre.language-mermaid > code');
+    blocks.forEach((block) => {
+      const container = document.createElement('div');
+      container.className = 'mermaid';
+      container.textContent = block.textContent;
+      block.parentElement.replaceWith(container);
+    });
+    mermaid.initialize({ 
+        startOnLoad: true, 
+        theme: 'default',
+        flowchart: { useMaxWidth: false, htmlLabels: true } 
+    });
+  });
+</script>

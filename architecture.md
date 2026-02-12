@@ -7,7 +7,7 @@ This page provides a high-level overview of the core components, design principl
 
 ```mermaid
 
-flowchart TD
+flowchart LR
 
     subgraph SRV1["SRV-1 (Bare Metal Control & Docker Host)"]
         DockerHost["Docker Engine"]
