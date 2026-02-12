@@ -1,4 +1,15 @@
 <script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true });
+  import mermaid from '[https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs](https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs)';
+  
+  // This bridge handles the Jekyll 'language-mermaid' class
+  document.addEventListener('DOMContentLoaded', function () {
+    const blocks = document.querySelectorAll('pre.language-mermaid > code');
+    blocks.forEach((block) => {
+      const container = document.createElement('div');
+      container.className = 'mermaid';
+      container.textContent = block.textContent;
+      block.parentElement.replaceWith(container);
+    });
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
+  });
 </script>
