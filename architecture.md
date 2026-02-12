@@ -1,4 +1,3 @@
-{% raw %}
 ```mermaid
 
 flowchart TD
@@ -92,7 +91,6 @@ flowchart TD
     DMZ --> Traefik
     STORAGE --> PBS
 ```
-{% endraw %}
 
 # Homelab Architecture Overview
 
