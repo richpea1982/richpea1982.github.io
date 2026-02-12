@@ -13,7 +13,8 @@ I am a DevOps and Cloud Engineering enthusiast focused on designing and building
 
 ### 🌐 Portfolio Navigation
 * 🏗️ **[Edge Networking](edge-networking.md)** — High-level layout, security zones, and design principles.
-* 🔧 **[Technical Architecture](architecture-technical.md)** — Deep dive into host-to-host connectivity, container networking, and backup flows.
+* 🔧 **[Internal Networking](inernal-networking.md)** — Deep dive into host-to-host connectivity, container networking, and backup flows.
+* 🛠️ **[Backup Strategy](backup-strategy.md)** — Deep dive into Ansible roles, Terraform, and secrets management.
 * 🛠️ **[Automation & IaC](automation.md)** — Deep dive into Ansible roles, Terraform, and secrets management.
 * 🚀 **[Key Projects](projects.md)** — Walkthroughs of reverse proxies, monitoring, and backup strategies.
 * 🔗 **[GitHub](https://github.com/richpea1982)** — Infrastructure-as-Code repositories.
