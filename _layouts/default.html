@@ -2,12 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
+
     <title>{{ page.title | default: site.title }}</title>
+
+    <!-- Load the theme’s CSS -->
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+
+    <!-- Load Mermaid -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true });
+    </script>
   </head>
 
   <body>
-    {% include mermaid.html %}
-    {{ content }}
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        {{ content }}
+      </div>
+    </main>
   </body>
 </html>
