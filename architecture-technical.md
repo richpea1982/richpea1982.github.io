@@ -15,7 +15,7 @@ This page provides a deep technical dive into the infrastructure configuration, 
 This diagram maps the physical hardware to the logical networks, showing how data flows between hosts, containers, and backup storage tiers.
 
 ```mermaid
-flowchart TD
+flowchart LR
     %% Define Nodes
     subgraph SRV1["SRV-1 (Control Node & Docker Host)"]
         direction TB
