@@ -1,3 +1,4 @@
+{% raw %}
 ```mermaid
 
 flowchart TD
