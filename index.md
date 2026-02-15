@@ -5,6 +5,7 @@ nav_order: 1
 ---
 
 # Richard Pearsall
+**[github](https://github.com/richpea1982/homelab-infra)**
 **Cloud Engineering | Automation | Linux | Infrastructure-as-Code**
 
 This site documents my homelab: a work‑in‑progress platform where I design, build, and validate reproducible, modular, and scalable infrastructure patterns aligned with current best practices. The current project may not fully achieve every goal yet; it is updated regularly as I iterate and improve.

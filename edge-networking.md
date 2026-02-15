@@ -1,5 +1,5 @@
 # Edge Networking & Security
-
+**[github](https://github.com/richpea1982/homelab-infra)**
 **Technical summary**  
 A zero‑trust ingress model routes all external traffic through Cloudflare’s global edge and an outbound Cloudflare Tunnel into a single internal reverse proxy (Traefik). This removes the need for inbound port forwarding while enabling domain‑based routing, TLS enforcement, and layered threat mitigation.
 
@@ -94,5 +94,5 @@ flowchart LR
 - **CrowdSec** provides community threat intelligence and behavioral detection.  
 - **Cloudflare Bouncer** pushes persistent blocks to the edge to reduce repeated abuse.
 
-**[Next page](https://richpea1982.github.io/internal-networking.html)** | **[Home](https://richpea1982.github.io/index.html)**
+**[Next page](https://richpea1982.github.io/internal-networking.html)** | **[Home](https://richpea1982.github.io/index.html)** | **[github](https://github.com/richpea1982/homelab-infra)**
 

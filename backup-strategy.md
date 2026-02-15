@@ -1,5 +1,5 @@
 # Backup & Recovery Strategy
-
+**[github](https://github.com/richpea1982/homelab-infra)**
 **Technical summary**  
 A 3‑2‑1 backup approach: local rollback via Proxmox snapshots, durable local backups via Proxmox Backup Server (PBS) and Restic, and an encrypted off‑site copy pushed by Restic to cloud storage. Backups run daily in low‑load hours with retention tuned to balance recoverability and cloud cost.
 
@@ -79,4 +79,4 @@ flowchart LR
 - **Document RTO/RPO targets** (suggested: snapshot rollback RTO in minutes; PBS local restore RTO in hours; cloud full restore RTO 24+ hours).  
 - **Test cadence:** weekly quick restores, monthly full restores, quarterly DR tabletop exercises.
 
-**[Next page](https://richpea1982.github.io/edge-networking.html)** | **[Home](https://richpea1982.github.io/index.html)**
+**[Next page](https://richpea1982.github.io/edge-networking.html)** | **[Home](https://richpea1982.github.io/index.html)** | **[github](https://github.com/richpea1982/homelab-infra)**

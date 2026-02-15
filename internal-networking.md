@@ -1,5 +1,5 @@
 # Internal Networking & Service Isolation
-
+**[github](https://github.com/richpea1982/homelab-infra)**
 **Technical summary**  
 Services are segmented across two physical hosts—Docker‑SRV and Proxmox‑SRV—using frontend/backend Docker networks and VLANs on Proxmox. Traefik remains the single ingress point, ensuring consistent access control and preventing direct exposure of backend components.
 
@@ -103,4 +103,4 @@ flowchart LR
 - Keeps monitoring and logging systems internal and protected.  
 - Provides a clear, auditable ingress and access path.
 
-**[Next page](https://richpea1982.github.io/backup-strategy.html)** | **[Home](https://richpea1982.github.io/index.html)**
+**[Next page](https://richpea1982.github.io/backup-strategy.html)** | **[Home](https://richpea1982.github.io/index.html)** | **[github](https://github.com/richpea1982/homelab-infra)**
