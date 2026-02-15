@@ -9,7 +9,7 @@ nav_order: 1
 
 This site documents my homelab: a work‑in‑progress platform where I design, build, and validate reproducible, modular, and scalable infrastructure patterns aligned with current best practices. The current project may not fully achieve every goal yet; it is updated regularly as I iterate and improve.
 
-## Goals (concise)
+## Goals
 - Build **reproducible** infrastructure and automation.  
 - Keep designs **modular** so components can be replaced or scaled independently.  
 - Demonstrate **scalability** and alignment with modern best practices.  
@@ -35,4 +35,4 @@ This site is updated regularly as the homelab evolves.
 ---
 
 ### 📬 Contact
-[GitHub](https://github.com/richpea1982) | [LinkedIn](www.linkedin.com/in/richard-pearsall-960392388) | [Email](rpearsall1982@gmail.com)
+[GitHub](https://github.com/richpea1982/homelab-infra) | [LinkedIn](www.linkedin.com/in/richard-pearsall-960392388) | [Email](rpearsall1982@gmail.com)
