@@ -1,12 +1,13 @@
 # Edge Networking & Security
 
-This section provides a high‑level overview of how external traffic enters the homelab, how it is authenticated and filtered, and how services remain protected behind a zero‑trust ingress layer. The goal is to expose applications securely without opening any ports to the public internet.
+**Technical summary**  
+A zero‑trust ingress model routes all external traffic through Cloudflare’s global edge and an outbound Cloudflare Tunnel into a single internal reverse proxy (Traefik). This removes the need for inbound port forwarding while enabling domain‑based routing, TLS enforcement, and layered threat mitigation.
 
----
-
-## Ingress Flow Overview
-
-Incoming requests are routed through Cloudflare’s global edge network before reaching the homelab. A Cloudflare Tunnel provides a secure, outbound‑only connection to the internal reverse proxy, ensuring that no inbound ports are exposed. Traefik receives all tunneled traffic and performs domain‑based routing, TLS enforcement, and service‑level access control. Backend services remain isolated and are never exposed directly.
+## At a glance
+- **Single external entry:** Cloudflare Edge → Cloudflare Tunnel → Traefik.  
+- **Zero‑trust:** No direct inbound ports; Cloudflare inspects and forwards only approved traffic.  
+- **Layered enforcement:** Traefik enforces routing and TLS; CrowdSec analyzes traffic; two bouncers apply decisions locally and at Cloudflare.  
+- **Service isolation:** Only frontend UIs are reachable via Traefik; backend services remain on isolated Docker networks or Proxmox VLANs.
 
 ```mermaid
 flowchart LR
@@ -76,28 +77,23 @@ flowchart LR
     Traefik -->|"s20"| Frontend_3
     Traefik -->|"s21"| Frontend_4
 ```
+## Diagram explanation
+1. **Internet user to Cloudflare Edge.** Cloudflare terminates TLS, applies edge rules, and performs initial filtering.  
+2. **Cloudflare Edge to Cloudflared Tunnel.** Traffic is forwarded over an outbound, encrypted tunnel to your homelab—no inbound ports required.  
+3. **Cloudflared Tunnel to Traefik.** Traefik is the single internal ingress point that performs domain routing, TLS termination, and middleware enforcement.  
+4. **Security decision flow.** Traefik Bouncer applies local rules; CrowdSec evaluates traffic patterns; Cloudflare Bouncer updates edge firewall rules to block repeat offenders.  
+5. **Traefik to frontend services.** Only approved frontends (e.g., Grafana, Bentopdf, Jellyfin, websites) are routed; backend components remain unreachable unless explicitly routed.
 
----
+## Operational notes
+- **Authentication and TLS:** Use automated certificate management and enforce strong TLS ciphers.  
+- **Access control:** Apply service‑level access rules in Cloudflare and Traefik middleware for admin UIs.  
+- **Monitoring:** Track tunnel health, Traefik routing errors, CrowdSec decisions, and Cloudflare firewall changes.  
+- **Incident response:** Block malicious IPs at Cloudflare first via the Cloudflare Bouncer, then isolate or take down affected services locally.
 
-## Zero‑Trust Ingress
+## Security enforcement summary
+- **CrowdSec** provides community threat intelligence and behavioral detection.  
+- **Traefik Bouncer** enforces immediate local decisions.  
+- **Cloudflare Bouncer** pushes persistent blocks to the edge to reduce repeated abuse.
 
-The homelab uses a zero‑trust ingress model built around Cloudflare Tunnel. All inbound traffic is terminated at Cloudflare’s edge, inspected, and only then forwarded through an encrypted outbound tunnel to the internal reverse proxy. This eliminates the need for port forwarding and ensures that no services are directly reachable from the public internet.
+**Next page:** https://richpea1982.github.io/internal-networking.html
 
-Traefik handles routing and TLS enforcement, ensuring that only approved domains and services are accessible.
-
----
-
-## Security Enforcement
-
-CrowdSec provides an additional security layer by analyzing traffic patterns and applying community‑driven threat intelligence. Two bouncers enforce decisions at different layers:
-
-- **Traefik Bouncer** applies local decisions at the reverse proxy  
-- **Cloudflare Bouncer** updates Cloudflare’s firewall using an API token  
-
-This dual‑layer approach blocks malicious traffic both at the edge and inside the homelab, reducing the attack surface and preventing repeated abuse.
-
----
-
-## Service Isolation
-
-Only frontend interfaces are reachable through Traefik. Backend components, internal APIs, and system services remain isolated behind Docker networks or Proxmox VLANs. This ensures that even if a public‑facing service is compromised, internal systems remain protected.

@@ -1,16 +1,13 @@
 # Backup & Recovery Strategy
 
-This page summarizes the homelab backup and recovery approach: local rollback capability for quick restores, durable local copies for fast recovery, and an encrypted off‑site copy for disaster recovery. The design follows a simple 3‑2‑1 principle: multiple copies, multiple local media, and one off‑site copy.
+**Technical summary**  
+A 3‑2‑1 backup approach: local rollback via Proxmox snapshots, durable local backups via Proxmox Backup Server (PBS) and Restic, and an encrypted off‑site copy pushed by Restic to cloud storage. Backups run daily in low‑load hours with retention tuned to balance recoverability and cloud cost.
 
----
-
-## Strategy Overview
-
-- **Local rollbacks** are provided by Proxmox snapshots for fast VM/LXC recovery.  
-- **Primary backup collection** for Proxmox is handled by PBS running on the Docker host and stored on an attached USB SSD.  
-- **System and application backups** for the Docker host are performed by Restic; Restic keeps local copies on the OS SSD and the USB SSD, and pushes encrypted backups to cloud storage.  
-- **Off‑site resilience** is achieved by Restic pushing encrypted copies to a cloud provider, ensuring recoverability if local media is lost.
-
+## At a glance
+- **Local rollbacks:** Proxmox snapshots for fast VM/LXC recovery.  
+- **Primary local backups:** PBS on Docker‑SRV stores Proxmox backups to an attached USB SSD.  
+- **System and app backups:** Restic keeps copies on the OS SSD and the USB SSD, and pushes encrypted backups off‑site.  
+- **Off‑site DR:** Restic uploads encrypted snapshots to cloud storage for disaster recovery.
 ```mermaid
 flowchart LR
 
@@ -53,21 +50,33 @@ flowchart LR
     USB_SSD -->|Included in Restic backups| Restic
     Restic -->|Push to Cloud| Cloud_Store
 ```
+## Diagram explanation
+1. **Proxmox snapshots** provide immediate rollback capability for VMs and containers.  
+2. **Proxmox to PBS:** Proxmox pushes backups to the PBS service running on Docker‑SRV; PBS stores them on the attached USB SSD.  
+3. **Restic backups:** Restic backs up system and application data to the local OS SSD and the USB SSD; it includes the PBS datastore so Proxmox backups are captured off‑site.  
+4. **USB SSD role:** Acts as PBS storage and a Restic local copy location; Restic also backs up the USB SSD contents.  
+5. **Restic to cloud:** Restic pushes encrypted backups to cloud storage for off‑site resilience.
 
----
+## Schedule and retention (single‑operator homelab)
+- **Operator:** Single maintainer (you). Keep encryption keys and credentials in Vaultwarden.  
+- **Backup schedule:** Daily backups run in the early hours when load is low. Cloud uploads occur **once per week**.  
+- **Retention policy:**  
+  - **Daily:** retain **5** daily backups.  
+  - **Weekly:** retain **3** weekly backups.  
+  - **Monthly:** retain **2** monthly backups.  
+  - **Cloud:** retain **up to 4** weekly cloud backups to control storage costs.
 
-## Key Principles
+## Runbook bullets
+- **Daily (automated):** Run backups in early hours; verify job success; check Restic and PBS logs; confirm USB SSD health.  
+- **Weekly:** Perform cloud upload; verify integrity of one cloud snapshot; rotate any short‑term credentials if needed.  
+- **Monthly:** Perform a partial or full restore test from cloud to validate keys and procedures.  
+- **Restore types to practice:** snapshot rollback (fast); PBS restore (local full VM/LXC); full Restic restore from cloud (DR scenario).  
+- **Secrets and keys:** Store encryption keys and cloud credentials in Vaultwarden; rotate and version them during monthly maintenance.  
+- **Monitoring and alerts:** Alert on backup failures, storage fill thresholds, and snapshot age exceeding retention windows.
 
-- **Separation of roles**: PBS is the Proxmox backup target and stores VM/LXC backups locally; Restic is the general backup engine that creates local copies and is responsible for pushing encrypted backups off‑site.  
-- **Multiple local media**: Backups exist on the OS SSD and the USB SSD to protect against single‑device failure.  
-- **Encrypted off‑site copy**: Restic pushes encrypted backups to cloud storage to satisfy off‑site recovery requirements.  
-- **Recoverability focus**: Snapshots provide quick rollbacks; Restic + PBS provide full restores and off‑site disaster recovery.
+## Recommendations
+- **Include PBS datastore in Restic scope** so Proxmox backups are recoverable off‑site.  
+- **Document RTO/RPO targets** (suggested: snapshot rollback RTO in minutes; PBS local restore RTO in hours; cloud full restore RTO 24+ hours). I can formalize these if you want.  
+- **Test cadence:** weekly quick restores, monthly full restores, quarterly DR tabletop exercises.
 
----
-
-## Practical Notes (for your runbook)
-
-- Ensure PBS datastore is included in Restic backups so Proxmox backups are recoverable off‑site.  
-- Rotate and test restore procedures regularly: snapshot rollback, PBS restore, and full Restic restore from cloud.  
-- Keep encryption keys and credentials stored securely and versioned in your secrets store (Vaultwarden is isolated for this purpose).
-
+**Next page:** https://richpea1982.github.io/edge-networking.html

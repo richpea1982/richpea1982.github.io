@@ -1,13 +1,13 @@
 # Internal Networking & Service Isolation
 
-This section provides a high‑level overview of how internal services are segmented across the homelab. The goal is to ensure that applications remain isolated, backend components are never exposed, and each environment is separated by clear network boundaries. This structure reduces the blast radius of any compromise and keeps critical services protected.
+**Technical summary**  
+Services are segmented across two physical hosts—Docker‑SRV and Proxmox‑SRV—using frontend/backend Docker networks and VLANs on Proxmox. Traefik remains the single ingress point, ensuring consistent access control and preventing direct exposure of backend components.
 
----
-
-## Network Segmentation Overview
-
-All traffic entering the homelab is routed through Traefik, which acts as the single ingress point. From there, services are divided across two physical hosts—Docker‑SRV and Proxmox‑SRV—each with their own internal isolation model. Docker services are separated into frontend and backend networks, while Proxmox workloads are segmented by VLANs. This ensures that only intended interfaces are reachable and that sensitive systems remain isolated.
-
+## At a glance
+- **Traefik as single ingress** for both Docker and Proxmox workloads.  
+- **Docker segmentation:** Frontend network for public UIs; backend network for exporters, logging, and monitoring.  
+- **Proxmox segmentation:** VLANs by function (WordPress, Apps, Vaultwarden) to limit lateral movement.  
+- **Backend isolation:** Monitoring and system services are internal-only and not reachable from the public internet.
 ```mermaid
 flowchart LR
 
@@ -85,22 +85,22 @@ flowchart LR
 
     Traefik -->|VLAN 30| Vaultwarden
 ```
+## Diagram explanation
+1. **Traefik receives inbound requests.** It routes only to frontend networks or VLANs that are explicitly allowed.  
+2. **Docker‑SRV Frontend network.** Hosts UIs such as Grafana and Prometheus UI that Traefik can reach.  
+3. **Docker‑SRV Backend network.** Hosts Prometheus core, node exporters, cAdvisor, Loki, and Promtail; these are isolated from Traefik and the public internet.  
+4. **Proxmox‑SRV VLANs.** VLAN 10 for WordPress sites; VLAN 20 for general apps (Jellyfin, StirlingPDF); VLAN 30 for Vaultwarden (isolated).  
+5. **Controlled access.** Frontend UIs query backend services over internal networks only; Traefik never exposes backend endpoints directly.
 
----
+## Operational notes
+- **Network policy:** Enforce strict firewall rules between VLANs and Docker networks; allow only necessary ports and protocols.  
+- **Least privilege routing:** Only allow Traefik to reach frontend containers; use mTLS or service accounts for backend communication where feasible.  
+- **Secrets handling:** Keep Vaultwarden on an isolated VLAN; never store backup keys on public networks.  
+- **Testing:** Periodically verify backend services are unreachable from the public internet and validate Traefik routing rules.
 
-## Docker Service Isolation
+## Benefits summary
+- Reduces blast radius by isolating services by function.  
+- Keeps monitoring and logging systems internal and protected.  
+- Provides a clear, auditable ingress and access path—useful evidence of secure architecture for employers.
 
-Docker‑SRV uses two internal networks to separate public‑facing interfaces from backend components. Only frontend services are reachable through Traefik, while backend systems such as exporters, log processors, and monitoring cores remain fully isolated. This ensures that internal data pipelines and system‑level metrics are never exposed externally.
-
----
-
-## Proxmox VLAN Segmentation
-
-Proxmox‑SRV uses VLANs to isolate workloads by function. WordPress sites, general applications, and Vaultwarden each operate on their own dedicated VLAN. This prevents lateral movement between services and ensures that sensitive applications remain isolated from less trusted workloads.
-
----
-
-## Controlled Access Through Traefik
-
-All internal services—whether running on Docker or Proxmox—are accessed exclusively through Traefik. This enforces a consistent security boundary and ensures that only approved interfaces are reachable. Backend components and isolated VLANs remain inaccessible unless explicitly routed.
-
+**Next page:** https://richpea1982.github.io/backup-strategy.html
