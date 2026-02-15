@@ -101,6 +101,6 @@ flowchart LR
 ## Benefits summary
 - Reduces blast radius by isolating services by function.  
 - Keeps monitoring and logging systems internal and protected.  
-- Provides a clear, auditable ingress and access path—useful evidence of secure architecture for employers.
+- Provides a clear, auditable ingress and access path.
 
-**Next page:** https://richpea1982.github.io/backup-strategy.html
+**[Next page](https://richpea1982.github.io/backup-strategy.html)** | **[Home](https://richpea1982.github.io/index.html)**
