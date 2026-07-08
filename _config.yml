@@ -1,8 +1,0 @@
-title: "Richard Pearsall"
-description: "Cloud Engineering | Automation | Linux | Infrastructure-as-Code"
-remote_theme: just-the-docs/just-the-docs
-
-# 1. Enable Mermaid with a version
-mermaid:
-  enabled: true
-  version: "10.9.1"
