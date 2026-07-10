@@ -10,7 +10,7 @@ nav_order: 4
 
 # Architecture réseau
 
-Cette page détaille la topologie réseau logique, les politiques de filtrage inter-VLAN et la stratégie de connectivité sécurisée implémentées pour isoler et protéger notre environnement.
+Cette page détaille la topologie réseau logique, les politiques de filtrage inter-VLAN et la stratégie de connectivité sécurisée implémentées pour isoler et protéger mon environnement.
 
 ---
 
@@ -55,13 +55,13 @@ Pour garantir un accès distant sécurisé à l'ensemble du homelab sans ouvrir 
 
 ## Flux Ingress & Stratégie Zero-Trust
 
-Aucun port n'est ouvert ou redirigé (pas de *Port Forwarding*) sur notre adresse IP publique WAN. L'exposition des services s'effectue via deux canaux hermétiques :
+Aucun port n'est ouvert ou redirigé (pas de *Port Forwarding*) sur mon adresse IP publique WAN. L'exposition des services s'effectue via deux canaux hermétiques :
 
 ### 1. Flux Entrants Publics (Cloudflare Tunnels)
 Pour les sites de production externes (`richard.pearsalls.fr`, `hantaweb`) :
 - Un démon léger `cloudflared` s'exécute au sein du cluster Kubernetes.
 - Ce démon établit une connexion sortante persistante et chiffrée vers les serveurs de bordure Cloudflare.
-- Le trafic HTTP/HTTPS mondial frappe Cloudflare, y subit une inspection de sécurité (WAF, protection DDoS), puis est encapsulé dans le tunnel jusqu'à notre contrôleur d'ingress **Traefik v3**.
+- Le trafic HTTP/HTTPS mondial frappe Cloudflare, y subit une inspection de sécurité (WAF, protection DDoS), puis est encapsulé dans le tunnel jusqu'à mon contrôleur d'ingress **Traefik v3**.
 
 ### 2. Flux Entrants Administratifs (Tailscale Mesh VPN)
 Pour l'accès technique nomade (accès aux dashboards Proxmox, Portails de logs Dozzle, instances Grafana) :

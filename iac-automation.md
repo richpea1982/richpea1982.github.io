@@ -6,7 +6,7 @@ nav_order: 3
 
 # IaC & Automatisation
 
-Cette page décrit la stratégie d'Infrastructure as Code (IaC) et les mécanismes d'automatisation de bout en bout utilisés pour provisionner, configurer et maintenir l'intégralité du homelab. Le dépôt Git `infra-homelab` constitue notre **source unique de vérité**.
+Cette page décrit la stratégie d'Infrastructure as Code (IaC) et les mécanismes d'automatisation de bout en bout utilisés pour provisionner, configurer et maintenir l'intégralité du homelab. Le dépôt Git `infra-homelab` constitue mon **source unique de vérité**.
 
 ---
 
@@ -29,7 +29,7 @@ Fournir une vue opérationnelle, exhaustive et technique des processus IaC. Cela
 ### 1. Gestion d'Infrastructure (Terraform)
 - **Fournisseur Principal** : `Telmate/proxmox` (ou le fournisseur officiel `bpg/proxmox`) pour interagir de manière native avec l'API Proxmox VE.
 - **Gestion du State (Backend S3)** : 
-  - Stockage hébergé sur le point d'accès S3 de notre infrastructure locale : `10.0.10.15:9000` (MinIO s'exécutant sur le NAS Bare-Metal).
+  - Stockage hébergé sur le point d'accès S3 de mon infrastructure locale : `10.0.10.15:9000` (MinIO s'exécutant sur le NAS Bare-Metal).
   - Sécurisation du State : Chiffrement au repos appliqué par défaut. Le mécanisme de *state locking* utilise l'API S3 native complétée par une table de verrouillage. En cas de blocage intempestif d'un pipeline, la commande `terraform force-unlock <LOCK-ID>` est documentée et restreinte au nœud d'administration.
 - **Modularité** : Le code est découpé en sous-modules réutilisables :
   - `modules/proxmox_lxc` : Provisionnement standardisé des conteneurs système (CPU, RAM, VLAN tagging).
@@ -48,7 +48,7 @@ Fournir une vue opérationnelle, exhaustive et technique des processus IaC. Cela
 - **Workflow CI/CD Typique** :
   1. Modification du code d'une application ou d'une valeur de configuration dans le dépôt Git local.
   2. Déclenchement automatique du pipeline de validation : `helm lint` sur les configurations graphiques + validation syntaxique YAML.
-  3. Packaging et publication automatique de la charte vers notre registre d'images privé (ou OCI-registry local).
+  3. Packaging et publication automatique de la charte vers mon registre d'images privé (ou OCI-registry local).
   4. Mise à jour automatique ou manuelle du manifeste `HelmChart` CRD pointant vers la version exacte figée (*pinned version*) dans Git.
   5. Le contrôleur Helm interne à K3s détecte la modification, réconcilie l'état du cluster, applique les rollbacks automatiques en cas d'échec et journalise l'audit.
 - **Sécurisation des Secrets** : Interdiction formelle de stocker des mots de passe, tokens ou clés privées en clair dans les fichiers `values.yaml`. L'injection s'effectue via des mécanismes d'intégration sécurisés comme Mozilla SOPS, Bitnami SealedSecrets ou une stack ExternalSecrets connectée à une instance Vault d'infrastructure.
