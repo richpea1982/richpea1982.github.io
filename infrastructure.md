@@ -4,17 +4,68 @@ title: Vue d'ensemble de l'infrastructure
 nav_order: 2
 ---
 
-<div style="text-align: right">
-  <a href="/en/infrastructure.html">🇬🇧 English</a>
-</div>
-
 # Vue d'ensemble de l'infrastructure
 
-🚧 **Page en cours de mise à jour**
-
-Cette page est en cours de réécriture pour refléter la nouvelle 
-architecture à 5 nœuds. Revenez bientôt !
+Cette page détaille la topologie physique et virtuelle du homelab. Le dépôt Git infra-homelab constitue la **source unique de vérité**.
 
 ---
+
+## Objectif de cette page
+
+Cette page décrit l'architecture cible (état final visé) et l'état réel de production tel que déclaré dans le dépôt `infra-homelab`. Elle se concentre exclusivement sur les éléments d'infrastructure (matériel, hyperviseurs, stockage, réseau, et services d'infrastructure).
+
+---
+
+## Architecture cible (5 nœuds physiques)
+
+**Backbone de gestion (2 nœuds)**  
+- **pve1 — Nœud de gestion spécialisé** : OPNsense, Proxmox Backup Server (PBS), Nœud d'automation; Terraform, Ansible, Semaphore.  
+- **NAS Bare-Metal** : Debian + ZFS RAID‑Z2 (6 × 1 TB) ; MinIO S3 (endpoint canonicalisé).
+
+**Couche de calcul (3 nœuds)**  
+- **pve2, pve3, pve4** — hyperviseurs Proxmox.  
+- **Stockage distribué** : Ceph répliqué sur pve2/pve3/pve4 (replication factor = 3 min 2).  
+- **K3s** : cluster K3s distribué ; K3s gère sa propre HA interne pour les services qu'il orchestre.
+
+---
+**Proxmox / Service mapping**
+
+| Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp; | Nœud Proxmox &nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp; |
+| :---| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `k3s-pve2` | 1021 | pve2 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
+| `k3s-pve3` | 1022 | pve3 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
+| `k3s-pve4` | 1023 | pve4 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 5Go |
+| `hantaweb` | 4011 | pve3 HA | VM | ceph-storage | WordPress (WooCommerce) | 2 Cœurs | 4Go |
+| `petitsanglais` | 4012 | pve4 HA | VM | ceph-storage | WordPress (site vitrine) | 1 Cœur | 1Go |
+| `Jellyfin` | 2010 | pve2 | LXC | ceph-storage | Media-server | 3 Cœurs | 6Go |
+| `Photoprism` | 2011 | pve2 | LXC | ceph-storage | Photo-db | 3 Cœurs | 6Go |
+
+Remarques : K3s VMs utilisent `local-lvm` (K3s gère l'HA interne). Jellyfin et Photoprism sont LXCs fixés sur pve2 pour GPU passthrough. Tous les autres VMs/LXCs utilisent `ceph-storage` sauf mention contraire.
+
+
+**K3s / Service mapping**
+
+| Service / App &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Namespace &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Exposed Via &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Access Domain / URL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Network Security (Calico Policy) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Storage (PV/PVC) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `CF Tunnel` | `networking` | Cloudflare Daemon | `richard.pearsalls.fr` | Autorisé à communiquer UNIQUEMENT avec le pod Portfolio | Aucun |
+| `Traefik` | `kube-system` | Réseau Local / WG | *Routage Interne* | Contrôle global du routeur d'ingress | Aucun (Apatride) |
+| `Prometheus` | `monitoring` | Ingress Traefik | *Interne Uniquement* | Isolé ; sortie uniquement pour la collecte de métriques | `prometheus-pvc` |
+| `Grafana` | `monitoring` | Traefik -> WG Local | `grafana.local.lan` | Restreint aux IPs admins authentifiées | `grafana-pvc` |
+| `Dozzle` | `monitoring` | Traefik -> WG Local | `logs.local.lan` | Restreint au namespace de monitoring | Aucun |
+| `BenToPDF` | `tools` | Traefik -> WG Local | `pdf.local.lan` | Backend isolé | `bento-pvc` |
+| `MD Portfolio` | `web` | CF Tunnel -> Traefik | `richard.pearsalls.fr` | Ingress depuis CF autorisé ; egress refusé | `portfolio-assets` |
+
+---
+
+## Réseau physique et plan de continuité
+
+Contraintes : chaque hôte Proxmox (pve2/pve3/pve4) dispose d'une seule interface 1 Gbps.  
+Plan de mitigation : ajouter un adaptateur USB‑Ethernet si nécessaire ; dédier les ports onboard au trafic Ceph via un switch non‑géré et utiliser les adaptateurs USB pour le trafic management/VM.
+
+---
+
+## Portée et références
+
+Page strictement dédiée à l'infrastructure. Pour l'automatisation, les services applicatifs, la sécurité ou la stratégie de sauvegarde, voir les pages dédiées listées sur la page d'accueil.
 
 [← Accueil](/index.md)
