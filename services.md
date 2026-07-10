@@ -1,3 +1,8 @@
+<!-- Enable Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true });
+</script>
 ---
 layout: default
 title: Services & Charges de travail
