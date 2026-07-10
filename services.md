@@ -1,3 +1,4 @@
+---
 <!-- Enable Mermaid -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
@@ -61,6 +62,7 @@ L'organisation interne du cluster s'articule autour de frontières logiques éta
 
 L'aiguillage du trafic vers le cluster est segmenté selon la sensibilité des applications :
 
+```mermaid
 flowchart TD
 
 %% ============================
@@ -105,6 +107,8 @@ end
 D --> M1
 D --> M2
 D --> M3
+
+```
 
 1. **Exposition Publique (Zéro-Trust)** : Le service `MD Portfolio` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du portfolio.
 
