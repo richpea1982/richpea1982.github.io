@@ -17,4 +17,4 @@ architecture à 5 nœuds. Revenez bientôt !
 
 ---
 
-[← Accueil](/fr/index.html)
+[← Accueil](/index.md)
