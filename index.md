@@ -13,7 +13,7 @@ nav_order: 1
 
 ## 🚀 Mon Parcours : De la Restauration à l'Ingénierie Système
 
-Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilise mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
+Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilisez mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
 
 ### 📈 L'Évolution de mon Homelab (L'école de la contrainte matérielle)
 
@@ -53,6 +53,12 @@ Mon environnement est divisé en une couche de calcul de production qui s'exécu
 ### 3. Architecture Réseau & Sécurité
 * **Point d'Entrée Zero-Trust :** Les connexions entrantes sont gérées via des Tunnels Cloudflare, sans aucun port ouvert sur l'extérieur.
 * **Micro-Segmentation :** Le trafic est strictement segmenté en VLANs dédiés (Management, DMZ, Production Interne). Au sein du cluster Kubernetes, les politiques réseau de **Calico CNI** imposent une isolation stricte des pods, tandis qu'un contrôleur d'ingress **Traefik v3** route le trafic à travers des bouncers **CrowdSec** locaux pour une protection HTTP à la couche 7.
+
+---
+
+## 🎯 Statut du Déploiement & Méthodologie
+
+L'architecture présentée sur ce site représente l'**état final cible désiré**. Chaque étape du déploiement a été entièrement pensée, mûrie et planifiée en amont avant l'écriture du moindre bloc de code. L'état réel et actuel de la configuration de mon homelab est directement traçable dans mon [dépôt Git infra-homelab](https://github.com/richpea1982/infra-homelab). Cette approche rigoureuse standardise l'ensemble de notre documentation ; cette précision méthodologique s'applique par défaut à toutes les sections suivantes sans qu'il soit nécessaire de la répéter sur chaque page.
 
 ---
 
