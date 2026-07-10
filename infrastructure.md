@@ -10,12 +10,6 @@ Cette page détaille la topologie physique et virtuelle du homelab. Le dépôt G
 
 ---
 
-## Objectif de cette page
-
-Cette page décrit l'architecture cible (état final visé) et l'état réel de production tel que déclaré dans le dépôt `infra-homelab`. Elle se concentre exclusivement sur les éléments d'infrastructure (matériel, hyperviseurs, stockage, réseau, et services d'infrastructure).
-
----
-
 ## Architecture cible (5 nœuds physiques)
 
 **Backbone de gestion (2 nœuds)**  
@@ -72,11 +66,5 @@ Remarques : K3s VMs utilisent `local-lvm` (K3s gère l'HA interne). Jellyfin et 
 
 Contraintes : chaque hôte Proxmox (pve2/pve3/pve4) dispose d'une seule interface 1 Gbps.  
 Plan de mitigation : ajouter un adaptateur USB‑Ethernet si nécessaire ; dédier les ports onboard au trafic Ceph via un switch non‑géré et utiliser les adaptateurs USB pour le trafic management/VM.
-
----
-
-## Portée et références
-
-Page strictement dédiée à l'infrastructure. Pour l'automatisation, les services applicatifs, la sécurité ou la stratégie de sauvegarde, voir les pages dédiées listées sur la page d'accueil.
 
 [← Accueil](/index.md)

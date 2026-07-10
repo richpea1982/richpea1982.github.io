@@ -58,7 +58,7 @@ Mon environnement est divisé en une couche de calcul de production qui s'exécu
 
 ## 🎯 Statut du Déploiement & Méthodologie
 
-L'architecture présentée sur ce site représente l'**état final cible désiré**. Chaque étape du déploiement a été entièrement pensée, mûrie et planifiée en amont avant l'écriture du moindre bloc de code. L'état réel et actuel de la configuration de mon homelab est directement traçable dans mon [dépôt Git infra-homelab](https://github.com/richpea1982/infra-homelab). Cette approche rigoureuse standardise l'ensemble de notre documentation ; cette précision méthodologique s'applique par défaut à toutes les sections suivantes sans qu'il soit nécessaire de la répéter sur chaque page.
+L'architecture présentée sur ce site représente l'**état final cible désiré**. Chaque étape du déploiement a été entièrement pensée, mûrie et planifiée en amont avant l'écriture du moindre bloc de code. L'état réel et actuel de la configuration de mon homelab est directement traçable dans mon [dépôt Git infra-homelab](https://github.com/richpea1982/infra-homelab). Cette approche rigoureuse standardise l'ensemble de mon documentation ; cette précision méthodologique s'applique par défaut à toutes les sections suivantes.
 
 ---
 
