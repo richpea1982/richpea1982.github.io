@@ -30,15 +30,15 @@ Cette page décrit l'architecture cible (état final visé) et l'état réel de 
 ---
 **Proxmox / Service mapping**
 
-| Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp; | Nœud Proxmox &nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp; |
-| :---| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `k3s-pve2` | 1021 | pve2 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
-| `k3s-pve3` | 1022 | pve3 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
-| `k3s-pve4` | 1023 | pve4 | VM | local-lvm | K3s control-plane / worker | 3 Cœurs | 5Go |
-| `hantaweb` | 4011 | pve3 HA | VM | ceph-storage | WordPress (WooCommerce) | 2 Cœurs | 4Go |
-| `petitsanglais` | 4012 | pve4 HA | VM | ceph-storage | WordPress (site vitrine) | 1 Cœur | 1Go |
-| `Jellyfin` | 2010 | pve2 | LXC | ceph-storage | Media-server | 3 Cœurs | 6Go |
-| `Photoprism` | 2011 | pve2 | LXC | ceph-storage | Photo-db | 3 Cœurs | 6Go |
+| Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp; | Nœud Proxmox &nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp; | Vlan &nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp; |
+| :---| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `k3s-pve2` | 1021 | pve2 | VM | 10 | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
+| `k3s-pve3` | 1022 | pve3 | VM | 10 | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
+| `k3s-pve4` | 1023 | pve4 | VM | 10 | local-lvm | K3s control-plane / worker | 3 Cœurs | 5Go |
+| `hantaweb` | 4011 | pve3 HA | VM | 40 | ceph-storage | WordPress (WooCommerce) | 2 Cœurs | 4Go |
+| `petitsanglais` | 4012 | pve4 HA | VM | 40 | ceph-storage | WordPress (site vitrine) | 1 Cœur | 1Go |
+| `Jellyfin` | 2010 | pve2 | LXC | 30 | ceph-storage | Media-server | 3 Cœurs | 6Go |
+| `Photoprism` | 2011 | pve2 | LXC | 30 | ceph-storage | Photo-db | 3 Cœurs | 6Go |
 
 Remarques : K3s VMs utilisent `local-lvm` (K3s gère l'HA interne). Jellyfin et Photoprism sont LXCs fixés sur pve2 pour GPU passthrough. Tous les autres VMs/LXCs utilisent `ceph-storage` sauf mention contraire.
 
