@@ -20,12 +20,11 @@
    ============================ */
 body {
   margin: 0;
-  /* On réserve l'espace de la barre latérale ici */
-  padding-left: 260px; 
+  padding: 0;
   background: var(--nord0);
   color: var(--nord6);
   font-family: 'JetBrains Mono', monospace;
-  display: flex;
+  /* Removed display: flex to restore normal document alignment flow */
 }
 
 /* ============================
@@ -70,11 +69,16 @@ body {
    CONTENT AREA
    ============================ */
 .content {
-  /* On remplace margin-left par des marges automatiques pour centrer */
+  /* Center the content container within the available space */
   margin: 0 auto; 
-  width: 100%;
   padding: 40px;
   max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+
+  /* Shift the centered block right to cleanly clear the fixed sidebar */
+  position: relative;
+  left: 130px; /* Shifts center point by exactly half of your sidebar width */
 }
 
 /* ============================
