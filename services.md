@@ -62,7 +62,7 @@ L'organisation interne du cluster s'articule autour de frontières logiques éta
 
 L'aiguillage du trafic vers le cluster est segmenté selon la sensibilité des applications :
 
-```mermaid
+<div class="mermaid">
 flowchart TD
 
 %% ============================
@@ -107,8 +107,7 @@ end
 D --> M1
 D --> M2
 D --> M3
-
-```
+</div>
 
 1. **Exposition Publique (Zéro-Trust)** : Le service `MD Portfolio` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du portfolio.
 
