@@ -28,8 +28,8 @@ Cette page détaille la topologie physique et virtuelle du homelab. Le dépôt G
 
 | Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp; | Vlan &nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp; |
 | :---| :--- | :--- | :--- | :--- | :--- | :--- | :--- 
-| `OPNsense` | 110 | VM | 10 | local-lvm | Router / Parfeu | 3 Cœurs | 4Go |
-| `PBS` | 130 | VM | 10 | local-lvm | Serveur de sauveguard | 2 Cœurs | 4Go |
+| `OPNsense` | 110 | VM | 10 | local-lvm | Router / Pare-feu | 3 Cœurs | 4Go |
+| `PBS` | 130 | VM | 10 | local-lvm | Serveur de sauvegard | 2 Cœurs | 4Go |
 | `Nœud d'automation` | 1040 | LXC | 10 | local-lvm | Automation | 2 Cœurs | 4Go |
 
 

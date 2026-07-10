@@ -18,7 +18,6 @@ Fournir une vue opérationnelle, exhaustive et technique des processus IaC. Cela
 
 ## Principes directeurs
 
-- **GitOps Strict** : L'état désiré est entièrement déclaré dans Git. Les modifications manuelles sur les hyperviseurs, routeurs ou configurations d'applications sont strictement interdites. Les pipelines CI/CD valident sintactiquement et appliquent les changements.
 - **Idempotence Absolue** : Tous les playbooks Ansible, scripts système et modules Terraform sont conçus pour être rejoués à l'infini sans altérer ou dégrader l'état stable de la production.
 - **Séparation des Responsabilités (Out-of-Band Control Plane)** : Les moteurs et serveurs d'automatisation (Ansible Control Node, serveurs d'intégration) s'exécutent sur des ressources matérielles dédiées (`pve1`), complètement isolées du pool de calcul général. Une panne globale du cluster Kubernetes ou du stockage distribué n'affecte jamais mes outils de gestion ou de reprise d'activité.
 
@@ -87,7 +86,7 @@ En cas de perte matérielle totale ou de corruption sévère du cluster de calcu
 
 * **[Vue d'ensemble de l'infra](/infrastructure.md)** — Layout physique, ségrégation du backbone et inventaire matériel.
 * **[Architecture Réseau](/networking.md)** — Règles de routage OPNsense, configurations VLAN et tunneling Zero-Trust.
-* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de donn>
+* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données>
 * **[Modèle de Sécurité](/security.md)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
 * **[Sauvegarde & Plan de Reprise](/backup-strategy.md)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
 

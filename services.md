@@ -23,7 +23,7 @@ Le homelab sépare strictement l'exécution des services selon leur état opéra
 ### 1. Services Hors-Cluster (Proxmox LXC/VM)
 Les applications gourmandes en calcul ou nécessitant un accès de stockage massif non-cloud-native sont isolées en dehors de Kubernetes afin de maximiser les performances :
 
-- **`Jellyfin` (LXC 2010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est intallé sur le stockage local-lvm.
+- **`Jellyfin` (LXC 2010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est installé sur le stockage local-lvm.
 - **`Photoprism` (LXC 2011, pve2, VLAN 30)** : Base de données et indexation de photos, installée de manière similaire sur `pve2`.
 
 - **VMs de Production WordPress (VLAN 40)** : Deux instances critiques s'exécutent en Haute Disponibilité (HA) grâce au stockage distribué Ceph :
@@ -56,14 +56,50 @@ L'organisation interne du cluster s'articule autour de frontières logiques éta
 
 L'aiguillage du trafic vers le cluster est segmenté selon la sensibilité des applications :
 
-[ Trafic Public ]  ──> Cloudflare WAF ──> Cloudflare Tunnel (cloudflared) ──┐  
-▼  
-[ Trafic Privé ]  ──> Flux Local / WireGuard ─────────────────────────> Traefik Ingress  
-│  
-┌─────────────────────────────────────┴─────────────────────────────────────┐  
-▼                                                                           ▼  
-[ Espace de Noms: web ]                                                   [ Espaces: monitoring / tools ]  
-- MD Portfolio (Exposé)                                                  - Grafana, Dozzle, BenToPDF
+flowchart TD
+
+%% ============================
+%% PUBLIC TRAFFIC PATH
+%% ============================
+
+subgraph PUBLIC["Trafic Public"]
+    A[Client Public]
+end
+
+A --> B[Cloudflare WAF]
+B --> C[Cloudflare Tunnel<br/>(cloudflared)]
+C --> D[Traefik Ingress]
+
+%% Web Namespace
+subgraph WEB["Namespace : web"]
+    P1[MD Portfolio<br/>(Exposé Public)]
+end
+
+D --> P1
+
+
+%% ============================
+%% PRIVATE TRAFFIC PATH
+%% ============================
+
+subgraph PRIVATE["Trafic Privé"]
+    X[Client Privé / Admin]
+end
+
+X --> Y[WireGuard LAN]
+Y --> D
+
+
+%% Monitoring / Tools Namespace
+subgraph MONTOOLS["Namespaces : monitoring / tools"]
+    M1[Grafana]
+    M2[Dozzle]
+    M3[BenToPDF]
+end
+
+D --> M1
+D --> M2
+D --> M3
 
 1. **Exposition Publique (Zéro-Trust)** : Le service `MD Portfolio` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du portfolio.
 

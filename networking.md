@@ -30,7 +30,7 @@ L'intégralité du trafic réseau est segmentée en VLANs distincts (802.1Q) afi
 | **VLAN 20** | `K3S_CLUSTER` | `10.0.20.0/24` | Trafic d'infrastructure Kubernetes (noeuds K3s, plan de contrôle et communication inter-pod). |
 | **VLAN 30** | `INTERNAL_SERVICES` | `10.0.30.0/24` | Conteneurs et VMs applicatifs internes n'ayant pas besoin d'exposition publique (Jellyfin, Photoprism). |
 | **VLAN 40** | `DMZ_PUBLIC` | `10.0.40.0/24` | Zone démilitarisée hébergeant les frontaux Web exposés publiquement (WordPress `hantaweb` et `petitsanglais`). |
-| **VLAN 50** | `untrusted` | `10.0.50.0/24` | Vlan dedée à des machines sans access à mon homelab. |
+| **VLAN 50** | `untrusted` | `10.0.50.0/24` | Vlan dédié à des machines sans access à mon homelab. |
 
 ---
 

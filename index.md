@@ -13,7 +13,7 @@ nav_order: 1
 
 ## 🚀 Mon Parcours : De la Restauration à l'Ingénierie Système
 
-Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilisez mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
+Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilise mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
 
 ### 📈 L'Évolution de mon Homelab (L'école de la contrainte matérielle)
 
