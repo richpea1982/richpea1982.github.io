@@ -20,16 +20,16 @@ Fournir une vue opérationnelle, exhaustive et technique des processus IaC. Cela
 
 - **GitOps Strict** : L'état désiré est entièrement déclaré dans Git. Les modifications manuelles sur les hyperviseurs, routeurs ou configurations d'applications sont strictement interdites. Les pipelines CI/CD valident sintactiquement et appliquent les changements.
 - **Idempotence Absolue** : Tous les playbooks Ansible, scripts système et modules Terraform sont conçus pour être rejoués à l'infini sans altérer ou dégrader l'état stable de la production.
-- **Séparation des Responsabilités (Out-of-Band Control Plane)** : Les moteurs et serveurs d'automatisation (Ansible Control Node, serveurs d'intégration) s'exécutent sur des ressources matérielles dédiées (`pve1`), complètement isolées du pool de calcul général. Une panne globale du cluster Kubernetes ou du stockage distribué n'affecte jamais nos outils de gestion ou de reprise d'activité.
+- **Séparation des Responsabilités (Out-of-Band Control Plane)** : Les moteurs et serveurs d'automatisation (Ansible Control Node, serveurs d'intégration) s'exécutent sur des ressources matérielles dédiées (`pve1`), complètement isolées du pool de calcul général. Une panne globale du cluster Kubernetes ou du stockage distribué n'affecte jamais mes outils de gestion ou de reprise d'activité.
 
 ---
 
 ## Composants clés & Spécifications techniques
 
 ### 1. Gestion d'Infrastructure (Terraform)
-- **Fournisseur Principal** : `Telmate/proxmox` (ou le fournisseur officiel `bpg/proxmox`) pour interagir de manière native avec l'API Proxmox VE.
+- **Fournisseur Principal** : `bpg/proxmox` pour interagir de manière native avec l'API Proxmox VE.
 - **Gestion du State (Backend S3)** : 
-  - Stockage hébergé sur le point d'accès S3 de mon infrastructure locale : `10.0.10.15:9000` (MinIO s'exécutant sur le NAS Bare-Metal).
+  - Stockage hébergé sur le point d'accès S3 de mon infrastructure locale : (MinIO s'exécutant sur le NAS Bare-Metal).
   - Sécurisation du State : Chiffrement au repos appliqué par défaut. Le mécanisme de *state locking* utilise l'API S3 native complétée par une table de verrouillage. En cas de blocage intempestif d'un pipeline, la commande `terraform force-unlock <LOCK-ID>` est documentée et restreinte au nœud d'administration.
 - **Modularité** : Le code est découpé en sous-modules réutilisables :
   - `modules/proxmox_lxc` : Provisionnement standardisé des conteneurs système (CPU, RAM, VLAN tagging).
