@@ -67,4 +67,14 @@ Remarques : K3s VMs utilisent `local-lvm` (K3s gère l'HA interne). Jellyfin et 
 Contraintes : chaque hôte Proxmox (pve2/pve3/pve4) dispose d'une seule interface 1 Gbps.  
 Plan de mitigation : ajouter un adaptateur USB‑Ethernet si nécessaire ; dédier les ports onboard au trafic Ceph via un switch non‑géré et utiliser les adaptateurs USB pour le trafic management/VM.
 
+---
+
+* **[IaC & Automatisation](/iac-automation.md)** — Modules Terraform, rôles Ansible et pipelines d'orchestration de déploiement.
+* **[Architecture Réseau](/networking.md)** — Règles de routage OPNsense, configurations VLAN et tunneling Zero-Trust.
+* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de donn>
+* **[Modèle de Sécurité](/security.md)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
+* **[Sauvegarde & Plan de Reprise](/backup-strategy.md)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
+
+---
+
 [← Accueil](/index.md)
