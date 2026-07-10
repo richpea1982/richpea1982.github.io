@@ -122,3 +122,40 @@ a {
 a:hover {
   color: var(--nord7);
 }
+
+/* ============================
+   TEXT CONTRAST & MINIMA OVERRIDES
+   ============================ */
+
+/* Main body text */
+.content p,
+.content li,
+.content blockquote,
+.content span {
+  color: var(--nord5); /* Bright off-white for maximum readability */
+  line-height: 1.6;
+}
+
+/* Bold and italic text */
+.content strong,
+.content b {
+  color: var(--nord6); /* Pure white for emphasis */
+}
+
+/* Links (Using !important to guarantee Minima doesn't override) */
+.content a {
+  color: var(--nord8) !important; 
+}
+
+.content a:hover {
+  color: var(--nord7) !important;
+}
+
+/* Table Content */
+.content table th {
+  color: var(--nord8); /* Frost blue for table headers */
+}
+    
+.content table td {
+  color: var(--nord5);
+}
