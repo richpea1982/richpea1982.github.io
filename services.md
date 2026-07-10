@@ -67,12 +67,12 @@ subgraph PUBLIC["Trafic Public"]
 end
 
 A --> B[Cloudflare WAF]
-B --> C[Cloudflare Tunnel<br/>(cloudflared)]
+B --> C["Cloudflare Tunnel (cloudflared)"]
 C --> D[Traefik Ingress]
 
 %% Web Namespace
 subgraph WEB["Namespace : web"]
-    P1[MD Portfolio<br/>(Exposé Public)]
+    P1["MD Portfolio (Exposé Public)"]
 end
 
 D --> P1
