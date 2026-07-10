@@ -91,11 +91,30 @@ h1, h2, h3 {
 /* ============================
    CODE BLOCKS
    ============================ */
-pre, code {
+/* Large multi-line code blocks */
+pre {
   background: var(--nord1);
   color: var(--nord6);
-  padding: 10px;
+  padding: 15px;
   border-radius: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+}
+
+/* Small inline code bubbles `like this` */
+p code, 
+li code,
+td code {
+  background: var(--nord1);
+  color: var(--nord6);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  
+  /* Fixes the overlap by locking the bubble inside the line height */
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.2;
 }
 
 /* ============================
