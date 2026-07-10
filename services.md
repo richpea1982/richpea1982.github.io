@@ -4,10 +4,6 @@ title: Services & Charges de travail
 nav_order: 5
 ---
 
-<div style="text-align: right">
-  <a href="/en/services.html">🇬🇧 English</a>
-</div>
-
 # Services & Charges de travail
 
 Cette page détaille l'architecture logique des applications, la topologie du cluster Kubernetes (K3s), les mécanismes de routage de couche 7 (Ingress) ainsi que la gestion de la persistance et du stockage des données du homelab.
