@@ -42,10 +42,10 @@ Cette page détaille la topologie physique et virtuelle du homelab. Le dépôt G
 | `k3s-pve4` | 1023 | pve4 | VM | 20 | local-lvm | K3s control-plane / worker | 3 Cœurs | 5Go |
 | `hantaweb` | 4011 | pve3 HA | VM | 40 | ceph-storage | WordPress (WooCommerce) | 2 Cœurs | 4Go |
 | `petitsanglais` | 4012 | pve4 HA | VM | 40 | ceph-storage | WordPress (site vitrine) | 1 Cœur | 1Go |
-| `Jellyfin` | 2010 | pve2 | LXC | 30 | ceph-storage | Media-server | 3 Cœurs | 6Go |
-| `Photoprism` | 2011 | pve2 | LXC | 30 | ceph-storage | Photo-db | 3 Cœurs | 6Go |
+| `Jellyfin` | 2010 | pve2 | LXC | 30 | local-lvm | Media-server | 3 Cœurs | 6Go |
+| `Photoprism` | 2011 | pve2 | LXC | 30 | local-lvm | Photo-db | 3 Cœurs | 6Go |
 
-Remarque : Bien que Jellyfin et Photoprism soient installés sur le stockage Ceph pour leurs conteneurs, l’intégralité de leurs données et médias est hébergée sur le NAS en RAID‑Z2.
+Remarque : Bien que Jellyfin et Photoprism soient installés sur le stockage local-lvm pour leurs conteneurs, l’intégralité de leurs données et médias est hébergée sur le NAS en RAID‑Z2.
 
 **K3s / Service mapping**
 

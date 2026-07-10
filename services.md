@@ -23,10 +23,8 @@ Le homelab sépare strictement l'exécution des services selon leur état opéra
 ### 1. Services Hors-Cluster (Proxmox LXC/VM)
 Les applications gourmandes en calcul ou nécessitant un accès de stockage massif non-cloud-native sont isolées en dehors de Kubernetes afin de maximiser les performances :
 
-- **`Jellyfin` (LXC 2010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est stocké sur Ceph pour la résilience du système.
+- **`Jellyfin` (LXC 2010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est intallé sur le stockage local-lvm.
 - **`Photoprism` (LXC 2011, pve2, VLAN 30)** : Base de données et indexation de photos, installée de manière similaire sur `pve2`.
-
-> 💡 **Règle de découplage du stockage** : Bien que les conteneurs système de Jellyfin et Photoprism résident sur le pool résilient `ceph-storage`, l'intégralité de leurs données applicatives, fichiers sources et médias bruts est hébergée de manière centralisée sur le **NAS Bare-Metal**.
 
 - **VMs de Production WordPress (VLAN 40)** : Deux instances critiques s'exécutent en Haute Disponibilité (HA) grâce au stockage distribué Ceph :
   - **`hantaweb` (VM 4011, pve3 HA)** : Instance e-commerce WooCommerce de production (2 Cœurs CPU, 4 Go RAM).
