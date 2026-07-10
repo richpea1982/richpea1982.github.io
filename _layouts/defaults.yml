@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{{ page.title }}</title>
+
+  <!-- Nord Theme CSS -->
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+
+  <!-- JetBrains Mono -->
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap">
+
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "neutral",
+      themeVariables: {
+        primaryColor: "#88c0d0",
+        primaryTextColor: "#2e3440",
+        primaryBorderColor: "#4c566a",
+        lineColor: "#81a1c1",
+        secondaryColor: "#3b4252",
+        tertiaryColor: "#4c566a",
+        noteBkgColor: "#3b4252",
+        noteTextColor: "#eceff4"
+      }
+    });
+  </script>
+</head>
+
+<body>
+
+  <div class="sidebar">
+    <h2 class="sidebar-title">Documentation</h2>
+    <ul class="nav-list">
+      <li><a href="/index.html">Accueil</a></li>
+      <li><a href="/infrastructure.html">Infrastructure</a></li>
+      <li><a href="/iac-automation.html">IaC & Automatisation</a></li>
+      <li><a href="/networking.html">Réseau</a></li>
+      <li><a href="/services.html">Services</a></li>
+      <li><a href="/security.html">Sécurité</a></li>
+      <li><a href="/backup-strategy.html">Sauvegarde</a></li>
+    </ul>
+  </div>
+
+  <main class="content">
+    {{ content }}
+  </main>
+
+</body>
+</html>

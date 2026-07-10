@@ -1,0 +1,124 @@
+/* ============================
+   NORD COLOR PALETTE
+   ============================ */
+:root {
+  --nord0: #2e3440;
+  --nord1: #3b4252;
+  --nord2: #434c5e;
+  --nord3: #4c566a;
+  --nord4: #d8dee9;
+  --nord5: #e5e9f0;
+  --nord6: #eceff4;
+  --nord7: #8fbcbb;
+  --nord8: #88c0d0;
+  --nord9: #81a1c1;
+  --nord10: #5e81ac;
+}
+
+/* ============================
+   GLOBAL
+   ============================ */
+body {
+  margin: 0;
+  background: var(--nord0);
+  color: var(--nord6);
+  font-family: 'JetBrains Mono', monospace;
+  display: flex;
+}
+
+/* ============================
+   SIDEBAR
+   ============================ */
+.sidebar {
+  width: 260px;
+  background: var(--nord1);
+  padding: 20px;
+  height: 100vh;
+  position: fixed;
+  overflow-y: auto;
+  border-right: 2px solid var(--nord3);
+}
+
+.sidebar-title {
+  color: var(--nord8);
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+}
+
+.nav-list li {
+  margin: 12px 0;
+}
+
+.nav-list a {
+  color: var(--nord6);
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.nav-list a:hover {
+  color: var(--nord8);
+}
+
+/* ============================
+   CONTENT AREA
+   ============================ */
+.content {
+  margin-left: 260px;
+  padding: 40px;
+  max-width: 900px;
+}
+
+/* ============================
+   HEADINGS
+   ============================ */
+h1, h2, h3 {
+  color: var(--nord8);
+}
+
+/* ============================
+   CODE BLOCKS
+   ============================ */
+pre, code {
+  background: var(--nord1);
+  color: var(--nord6);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* ============================
+   TABLES
+   ============================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+table th, table td {
+  border: 1px solid var(--nord3);
+  padding: 10px;
+}
+
+table th {
+  background: var(--nord2);
+}
+
+table td {
+  background: var(--nord1);
+}
+
+/* ============================
+   LINKS
+   ============================ */
+a {
+  color: var(--nord8);
+}
+
+a:hover {
+  color: var(--nord7);
+}
