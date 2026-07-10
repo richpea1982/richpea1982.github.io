@@ -58,12 +58,12 @@ Mon environnement est divisé en une couche de calcul de production qui s'exécu
 
 ## 📁 Zoom sur les Projets
 
-* **[Vue d'ensemble de l'infra](/fr/infrastructure.html)** — Layout physique, ségrégation du backbone et inventaire matériel.
-* **[IaC & Automatisation](/fr/iac-automation.html)** — Modules Terraform, rôles Ansible et pipelines d'orchestration de déploiement.
-* **[Architecture Réseau](/fr/networking.html)** — Règles de routage OPNsense, configurations VLAN et tunneling Zero-Trust.
-* **[Services & Applications](/fr/services.html)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données.
-* **[Modèle de Sécurité](/fr/security.html)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
-* **[Sauvegarde & Plan de Reprise](/fr/backup-strategy.html)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
+* **[Vue d'ensemble de l'infra](/infrastructure.md)** — Layout physique, ségrégation du backbone et inventaire matériel.
+* **[IaC & Automatisation](/iac-automation.md)** — Modules Terraform, rôles Ansible et pipelines d'orchestration de déploiement.
+* **[Architecture Réseau](/networking.md)** — Règles de routage OPNsense, configurations VLAN et tunneling Zero-Trust.
+* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données.
+* **[Modèle de Sécurité](/security.md)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
+* **[Sauvegarde & Plan de Reprise](/backup-strategy.md)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
 
 ---
 
