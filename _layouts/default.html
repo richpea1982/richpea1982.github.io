@@ -19,23 +19,30 @@ layout: null
   <!-- JetBrains Mono -->
   <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap">
-
-  <!-- Mermaid -->
+```html
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: "neutral",
-      themeVariables: {
-        primaryColor: "#88c0d0",
-        primaryTextColor: "#2e3440",
-        primaryBorderColor: "#4c566a",
-        lineColor: "#81a1c1",
-        secondaryColor: "#3b4252",
-        tertiaryColor: "#4c566a",
-        noteBkgColor: "#3b4252",
-        noteTextColor: "#eceff4"
-      }
+    document.addEventListener("DOMContentLoaded", function () {
+      // Find all Jekyll-generated code blocks marked as language-mermaid
+      const mermaidBlocks = document.querySelectorAll("pre code.language-mermaid, pre.mermaid, code.mermaid");
+      
+      mermaidBlocks.forEach(function (block, index) {
+        // Create a secure raw div container for Mermaid to read
+        const div = document.createElement("div");
+        div.className = "mermaid";
+        div.id = "mermaid-diagram-" + index;
+        div.textContent = block.textContent;
+        
+        // Replace the unrendered code elements with our clean div block
+        const parent = block.closest("pre") || block;
+        parent.parentNode.replaceChild(div, parent);
+      });
+
+      // Initialize the engine safely after parsing elements
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "neutral"
+      });
     });
   </script>
 </head>
