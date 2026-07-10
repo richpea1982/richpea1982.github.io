@@ -20,6 +20,8 @@
    ============================ */
 body {
   margin: 0;
+  /* On réserve l'espace de la barre latérale ici */
+  padding-left: 260px; 
   background: var(--nord0);
   color: var(--nord6);
   font-family: 'JetBrains Mono', monospace;
@@ -68,7 +70,9 @@ body {
    CONTENT AREA
    ============================ */
 .content {
-  margin-left: 260px;
+  /* On remplace margin-left par des marges automatiques pour centrer */
+  margin: 0 auto; 
+  width: 100%;
   padding: 40px;
   max-width: 900px;
 }
