@@ -45,8 +45,7 @@ Cette page détaille la topologie physique et virtuelle du homelab. Le dépôt G
 | `Jellyfin` | 2010 | pve2 | LXC | 30 | ceph-storage | Media-server | 3 Cœurs | 6Go |
 | `Photoprism` | 2011 | pve2 | LXC | 30 | ceph-storage | Photo-db | 3 Cœurs | 6Go |
 
-Remarques : K3s VMs utilisent `local-lvm` (K3s gère l'HA interne). Jellyfin et Photoprism sont LXCs fixés sur pve2 pour GPU passthrough. Tous les autres VMs/LXCs utilisent `ceph-storage` sauf mention contraire.
-
+Remarque : Bien que Jellyfin et Photoprism soient installés sur le stockage Ceph pour leurs conteneurs, l’intégralité de leurs données et médias est hébergée sur le NAS en RAID‑Z2.
 
 **K3s / Service mapping**
 
