@@ -1,3 +1,7 @@
+---
+layout: base
+---
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6,7 +10,10 @@
 
   <title>{{ page.title }}</title>
 
-  <!-- Nord Theme CSS -->
+  <!-- Minima CSS -->
+  <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
+
+  <!-- Custom Nord Theme -->
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
 
   <!-- JetBrains Mono -->
