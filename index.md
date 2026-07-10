@@ -38,7 +38,7 @@ My current 5-machine architecture didn't appear overnight. It evolved through ha
 
 ---
 
-## 🛠️ Current Production Architecture (5 Nodes)
+## 🛠️ Current Production Architecture - 5 Nodes (In active developement)
 
 My environment is divided into a production compute tier running directly on top of a highly resilient management backbone:
 
