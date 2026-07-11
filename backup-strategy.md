@@ -4,10 +4,6 @@ title: Sauvegarde & Reprise
 nav_order: 7
 ---
 
-<div style="text-align: right">
-  <a href="/en/backup-strategy.html">🇬🇧 English</a>
-</div>
-
 # Sauvegarde & Reprise
 
 🚧 **Page en cours de mise à jour**

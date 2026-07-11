@@ -4,10 +4,6 @@ title: Sécurité
 nav_order: 6
 ---
 
-<div style="text-align: right">
-  <a href="/en/security.html">🇬🇧 English</a>
-</div>
-
 # Sécurité
 
 🚧 **Page en cours de mise à jour**
