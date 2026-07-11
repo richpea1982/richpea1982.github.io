@@ -3,7 +3,11 @@ layout: default
 title: IaC & Automatisation
 nav_order: 3
 ---
+# Richard Pearsall
+**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
 
+[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
+---
 # IaC & Automatisation
 
 Cette page décrit la stratégie d'Infrastructure as Code (IaC) et les mécanismes d'automatisation de bout en bout utilisés pour provisionner, configurer et maintenir l'intégralité du homelab. Le dépôt Git `infra-homelab` constitue mon **source unique de vérité**.
@@ -86,7 +90,7 @@ En cas de perte matérielle totale ou de corruption sévère du cluster de calcu
 
 * **[Vue d'ensemble de l'infra](/infrastructure.md)** — Layout physique, ségrégation du backbone et inventaire matériel.
 * **[Architecture Réseau](/networking.md)** — Règles de routage OPNsense, configurations VLAN et tunneling Zero-Trust.
-* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données>
+* **[Services & Applications](/services.md)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données
 * **[Modèle de Sécurité](/security.md)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
 * **[Sauvegarde & Plan de Reprise](/backup-strategy.md)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
 
