@@ -3,11 +3,7 @@ layout: default
 title: IaC & Automatisation
 nav_order: 3
 ---
-# Richard Pearsall
-**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
 
-[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
----
 # IaC & Automatisation
 
 Cette page décrit la stratégie d'Infrastructure as Code (IaC) et les mécanismes d'automatisation de bout en bout utilisés pour provisionner, configurer et maintenir l'intégralité du homelab. Le dépôt Git `infra-homelab` constitue mon **source unique de vérité**.
