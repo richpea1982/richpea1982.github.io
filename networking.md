@@ -3,11 +3,7 @@ layout: default
 title: Architecture réseau
 nav_order: 4
 ---
-# Richard Pearsall
-**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
 
-[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
----
 # Architecture réseau
 
 Cette page détaille la topologie réseau logique, les politiques de filtrage inter-VLAN et la stratégie de connectivité sécurisée implémentées pour isoler et protéger mon environnement.

@@ -3,11 +3,6 @@ layout: default
 title: Vue d'ensemble de l'infrastructure
 nav_order: 2
 ---
-# Richard Pearsall
-**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
-
-[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
----
 
 # Vue d'ensemble de l'infrastructure
 

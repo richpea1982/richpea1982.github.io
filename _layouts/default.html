@@ -3,23 +3,20 @@ layout: null
 ---
 
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ page.lang }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>{{ page.title }}</title>
 
-  <!-- Minima CSS -->
   <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
 
-  <!-- Custom Nord Theme -->
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
 
-  <!-- JetBrains Mono -->
   <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap">
-```html
+
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -50,19 +47,56 @@ layout: null
 <body>
 
   <div class="sidebar">
-    <h2 class="sidebar-title">Documentation</h2>
-    <ul class="nav-list">
-      <li><a href="/index.html">Accueil</a></li>
-      <li><a href="/infrastructure.html">Infrastructure</a></li>
-      <li><a href="/iac-automation.html">IaC & Automatisation</a></li>
-      <li><a href="/networking.html">Réseau</a></li>
-      <li><a href="/services.html">Services</a></li>
-      <li><a href="/security.html">Sécurité</a></li>
-      <li><a href="/backup-strategy.html">Sauvegarde</a></li>
-    </ul>
+    {% if page.lang == "en" %}
+      <h2 class="sidebar-title">Documentation</h2>
+      <ul class="nav-list">
+        <li><a href="/en/index.html">Home</a></li>
+        <li><a href="/en/infrastructure.html">Infrastructure</a></li>
+        <li><a href="/en/iac-automation.html">IaC & Automation</a></li>
+        <li><a href="/en/networking.html">Networking</a></li>
+        <li><a href="/en/services.html">Services</a></li>
+        <li><a href="/en/security.html">Security</a></li>
+        <li><a href="/en/backup-strategy.html">Backup</a></li>
+      </ul>
+    {% else %}
+      <h2 class="sidebar-title">Documentation</h2>
+      <ul class="nav-list">
+        <li><a href="/index.html">Accueil</a></li>
+        <li><a href="/infrastructure.html">Infrastructure</a></li>
+        <li><a href="/iac-automation.html">IaC & Automatisation</a></li>
+        <li><a href="/networking.html">Réseau</a></li>
+        <li><a href="/services.html">Services</a></li>
+        <li><a href="/security.html">Sécurité</a></li>
+        <li><a href="/backup-strategy.html">Sauvegarde</a></li>
+      </ul>
+    {% endif %}
   </div>
 
   <main class="content">
+    
+    <header class="site-profile-header" style="margin-bottom: 30px;">
+      {% if page.lang == "en" %}
+        <h1>Richard Pearsall</h1>
+        <p><strong>Cloud Engineering | Infrastructure-as-Code | Linux | Networking & Security</strong></p>
+        <p>
+          <a href="https://github.com/richpea1982/infra-homelab">GitHub</a> | 
+          <a href="https://www.linkedin.com/in/richard-pearsall-960392388">LinkedIn</a> | 
+          <a href="mailto:rpearsall1982@gmail.com">Email</a> | 
+          <a href="/">🇫🇷 Version Française</a>
+        </p>
+      {% else %}
+        <h1>Richard Pearsall</h1>
+        <p><strong>Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité</strong></p>
+        <p>
+          <a href="https://github.com/richpea1982/infra-homelab">GitHub</a> | 
+          <a href="https://www.linkedin.com/in/richard-pearsall-960392388">LinkedIn</a> | 
+          <a href="mailto:rpearsall1982@gmail.com">Email</a> | 
+          <a href="/en/">🇬🇧 English Version</a>
+        </p>
+      {% endif %}
+      <hr style="border: 0; border-top: 2px solid var(--nord3); margin-top: 20px;">
+    </header>
+
     {{ content }}
   </main>
 

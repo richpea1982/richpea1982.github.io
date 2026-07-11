@@ -3,11 +3,7 @@ layout: default
 title: Services & Charges de travail
 nav_order: 5
 ---
-# Richard Pearsall
-**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
 
-[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
----
 # Services & Charges de travail
 
 Cette page détaille l'architecture logique des applications, la topologie du cluster Kubernetes (K3s), les mécanismes de routage de couche 7 (Ingress) ainsi que la gestion de la persistance et du stockage des données du homelab.

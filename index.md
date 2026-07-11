@@ -4,13 +4,6 @@ title: Accueil
 nav_order: 1
 ---
 
-# Richard Pearsall
-**Ingénierie Cloud | Infrastructure-as-Code | Linux | Réseaux & Sécurité**
-
-[GitHub](https://github.com/richpea1982/infra-homelab) | [LinkedIn](https://www.linkedin.com/in/richard-pearsall-960392388) | [Email](mailto:rpearsall1982@gmail.com) | [🇬🇧 English Version](/en/)
-
----
-
 ## 🚀 Mon Parcours : De la Restauration à l'Ingénierie Système
 
 Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilise mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.

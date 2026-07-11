@@ -2,3 +2,14 @@ theme: minima
 markdown: kramdown
 kramdown:
   input: GFM
+
+# Scope configurations for language contexts
+defaults:
+  - scope:
+      path: "" # Sets French as the default for root files
+    values:
+      lang: "fr"
+  - scope:
+      path: "en" # Overrides to English for any files inside the en/ folder
+    values:
+      lang: "en"
