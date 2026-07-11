@@ -75,12 +75,5 @@ Au-delà du filtrage par paquets opéré par OPNsense, la sécurité réseau est
 
 ---
 
-* **[Vue d'ensemble de l'infra](/infrastructure.html)** — Layout physique, ségrégation du backbone et inventaire matériel.
-* **[IaC & Automatisation](/iac-automation.html)** — Modules Terraform, rôles Ansible et pipelines d'orchestration de déploiement.
-* **[Services & Applications](/services.html)** — Topologie Kubernetes (K3s), routage d'ingress Traefik et cycle de vie des bases de données
-* **[Modèle de Sécurité](/security.html)** — Analyse des menaces, parsing de logs CrowdSec et injection de secrets.
-* **[Sauvegarde & Plan de Reprise](/backup-strategy.html)** — Implémentation de la règle 3-2-1, Proxmox Backup Server et réplication ZFS.
-
----
-
-[← Accueil](/index.html)
+* **[Services & Applications](/services.html)**
+* **[← Accueil](/index.html)**
