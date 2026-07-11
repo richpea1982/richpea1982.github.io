@@ -85,5 +85,5 @@ En cas de perte matérielle totale ou de corruption sévère du cluster de calcu
 
 ---
 
-* **[Architecture Réseau](/networking.html)**
+* **[Suivant : Architecture Réseau →](/networking.html)**
 * **[← Accueil](/index.html)**

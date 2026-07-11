@@ -75,5 +75,5 @@ Au-delà du filtrage par paquets opéré par OPNsense, la sécurité réseau est
 
 ---
 
-* **[Services & Applications](/services.html)**
+* **[Suivant : Services & Applications →](/services.html)**
 * **[← Accueil](/index.html)**

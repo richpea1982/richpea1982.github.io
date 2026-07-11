@@ -127,5 +127,5 @@ Configuré sous Debian avec un groupe **ZFS RAID-Z2 (6 × 1 TB)**, il offre une 
 
 ---
 
-* **[Sécurité](/security.html)**
+* **[Suivant : Sécurité →](/security.html)**
 * **[← Accueil](/index.html)**
