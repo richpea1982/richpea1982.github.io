@@ -113,6 +113,6 @@ Dans l'état cible de l'infrastructure, l'accès administratif au cluster (via `
 
 ---
 
-* **[Suivant : Stratégie de Sauvegarde & Résilience →](/backup-strategy.html)**
+* **[Suivant : Réseau →](/networking.html)**
 * **[← Retour à la Vue d'ensemble](/infrastructure.html)**
 ---

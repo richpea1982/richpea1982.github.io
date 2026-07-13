@@ -90,5 +90,6 @@ Pour parer aux sinistres physiques (incendie, vol, dégât des eaux), la couche 
 ---
 
 * **[Suivant : Rétrospective Technique & Leçons Apprises →](/lessons-learned.html)**
-* **[← Retour à IaC & Automatisation](/iac-automation.html)**
+* **[← Accueil](/index.html)**
+
 ---

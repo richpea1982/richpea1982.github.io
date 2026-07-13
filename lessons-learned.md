@@ -58,6 +58,5 @@ Au-delà des corrections de bugs bloquants, des refactorisations ont été mené
 
 ---
 
-* **[← Retour à la Stratégie de Sauvegarde](/backup-strategy.html)**
 * **[← Retour à l'Accueil](/index.html)**
 ---
