@@ -1,79 +1,130 @@
 ---
 layout: default
-title: Architecture réseau
-nav_order: 4
+title: IaC & Automatisation
+nav_order: 3
 ---
 
-# Architecture réseau
+# IaC & Automatisation de l'Infrastructure
 
-Cette page détaille la topologie réseau logique, les politiques de filtrage inter-VLAN et la stratégie de connectivité sécurisée implémentées pour isoler et protéger mon environnement.
-
----
-
-## Philosophie Réseau & Segmentation
-
-Le réseau du homelab est entièrement articulé autour d'une approche **Zero-Trust** et d'une micro-segmentation stricte. L'infrastructure élimine les zones de confiance implicites : tout trafic traversant le pare-feu virtualisé **OPNsense** est bloqué par défaut (politique *Default Drop*) et doit faire l'objet d'une règle d'autorisation explicite.
+Cette page décrit la chaîne de déploiement automatisée de l'infrastructure. L'intégralité du cycle de vie des ressources (du provisionnement matériel au déploiement des applications) est gérée de manière déclarative à travers deux dépôts Git distincts : `infra-homelab` (l'infrastructure de base) et `k3s` (les ressources applicatives). Toute l'exécution de ce workflow est orchestrée de manière centralisée via notre plateforme de CI/CD.
 
 ---
 
-## Plan de Micro-Segmentation (VLANs)
+## 🏗️ Architecture des Dépôts Git (Séparation des Responsabilités)
 
-L'intégralité du trafic réseau est segmentée en VLANs distincts (802.1Q) afin d'isoler les plans de contrôle, les charges utiles et les flux multimédias :
+Pour garantir une sécurité et une maintenance optimales, la configuration est séparée en deux frontières étanches :
 
-| VLAN ID | Nom du Réseau | Plage IP (CIDR) | Description / Usage Target |
-| :--- | :--- | :--- | :--- |
-| **VLAN 10** | `MGMT_BACKBONE` | `10.0.10.0/24` | Interfaces d'administration (Proxmox VE, PBS, NAS, Commutateurs, OPNsense WebGUI). |
-| **VLAN 20** | `K3S_CLUSTER` | `10.0.20.0/24` | Trafic d'infrastructure Kubernetes (noeuds K3s, plan de contrôle et communication inter-pod). |
-| **VLAN 30** | `INTERNAL_SERVICES` | `10.0.30.0/24` | Conteneurs et VMs applicatifs internes n'ayant pas besoin d'exposition publique (Jellyfin, Photoprism). |
-| **VLAN 40** | `DMZ_PUBLIC` | `10.0.40.0/24` | Zone démilitarisée hébergeant les frontaux Web exposés publiquement (WordPress `hantaweb` et `petitsanglais`). |
-| **VLAN 50** | `untrusted` | `10.0.50.0/24` | Vlan dédié à des machines sans access à mon homelab. |
+```mermaid
+graph TD
+    subgraph Repos [Gestion des Sources]
+        A[Dépôt: infra-homelab]
+        B[Dépôt: k3s]
+    end
 
----
+    subgraph Provision [Couche Core]
+        C[Pipeline CI/CD : Terraform + Ansible via Semaphore]
+    end
 
-## Configuration & Règles OPNsense
+    subgraph K3sCluster [Orchestrateur]
+        D[Bootstrap ArgoCD]
+        E[Gestion des Manifestes & Pods]
+    end
 
-L'instance **OPNsense** s'exécute virtualisée sur le nœud `pve1` hors-cluster. Elle gère l'ensemble du routage inter-VLAN et applique les politiques de sécurité à l'aide de l'intégration `os-tailscale` et des bouncers d'infrastructure.
+    A -->|1. Déploiement| C
+    C -->|2. Initialisation| D
+    B -->|3. Synchronisation SSH Deploy Key| E
+    D -.->|Pilote| E
+```
 
-### 1. Politiques de Filtrage Majeures (Firewall Matrix)
-- **VLAN 10 (MGMT) → Tous les VLANs :** Autorisé de manière bidirectionnelle. C'est la seule zone capable d'initier des sessions SSH ou d'accéder aux API d'administration de n'importe quel autre réseau.
-- **VLAN 20 (K3s) → VLAN 10 (NAS / S3) :** Autorisé uniquement vers l'IP spécifique du NAS sur les ports de stockage `9000` (MinIO API) et `9001` (Console) pour la persistance et l'accès au state Terraform. Tout autre accès vers le VLAN 10 est rejeté.
-- **VLAN 40 (DMZ) → Réseau Interne :** Blocage absolu (*Strict Drop*). Si un site WordPress de la DMZ venait à être compromis, l'attaquant reste confiné dans le VLAN 40 et ne peut initier aucune connexion vers le cluster K3s, les bases de données internes ou les interfaces de gestion.
-- **Politique Internet (WAN Egress) :** Tous les VLANs disposent d'un accès sortant vers l'Internet public (NAT) limité aux ports standards (`80`, `443`, `53`) pour la récupération des mises à jour logicielles et des chartes Helm.
-
-### 2. Implémentation Tailscale (`os-tailscale`)
-Pour garantir un accès distant sécurisé à l'ensemble du homelab sans ouvrir le moindre port sur l'interface WAN, OPNsense utilise le plugin officiel Tailscale configuré comme passerelle de sous-réseau (*Subnet Router*) :
-- **Configuration UI (`VPN > Tailscale > Settings`) :**
-- **Advertise Subnet Routes :** Activé et configuré pour annoncer l'ensemble de mes supernets locaux (ex. `10.0.0.0/16` ou mes VLANs spécifiques `10.0.10.0/24`, `10.0.20.0/24`).
-- **Accept DNS / Accept Subnet Routes / Advertise Exit Node :** Désactivés par défaut pour maintenir l'étanchéité des résolutions DNS locales gérées par Unbound DNS et éviter le reroutage sauvage du trafic public.
-- **Assignation d'Interface & Règles :** L'interface virtuelle `tailscale0` est mappée nativement dans OPNsense. Une règle de filtrage sur l'onglet dédié autorise les flux entrants du tunnel VPN à destination des ressources autorisées du VLAN 10 et 20 après authentification stricte sur la console d'administration Tailscale.
+1. **`infra-homelab`** : Contient le code Terraform (fournisseur bpg/proxmox) pour déclarer les VMs/LXCs et les playbooks Ansible de configuration OS de base. C'est ici qu'est bootstrappé ArgoCD.
+2. **`k3s`** : Dépôt applicatif géré exclusivement en GitOps par ArgoCD. Il contient les CRDs, les charts Helm (Traefik, Calico, Prometheus) et les manifests applicatifs selon le pattern "App of Apps".
 
 ---
 
-## Flux Ingress & Stratégie Zero-Trust
+## 🛠️ Le Workflow de Provisioning en 3 Couches
 
-Aucun port n'est ouvert ou redirigé (pas de *Port Forwarding*) sur mon adresse IP publique WAN. L'exposition des services s'effectue via deux canaux hermétiques :
+### 1. Provisioning Infrastructure (Terraform)
+Le module Terraform s'interface avec l'API Proxmox VE pour créer les machines virtuelles à partir de templates Cloud-Init (Debian 12). L'agent QEMU (`qemu-guest-agent`) est directement activé et injecté à cette étape afin de permettre à Terraform de découvrir dynamiquement les adresses IP de l'infrastructure via ses *outputs*. Les clés SSH publiques des administrateurs et la configuration réseau initiale (VLAN, IPs statiques) sont injectées automatiquement lors de la création de la ressource.
 
-### 1. Flux Entrants Publics (Cloudflare Tunnels)
-Pour les sites de production externes par leur domain :
-- Un démon léger `cloudflared` s'exécute au sein du cluster Kubernetes.
-- Ce démon établit une connexion sortante persistante et chiffrée vers les serveurs de bordure Cloudflare.
-- Le trafic HTTP/HTTPS mondial frappe Cloudflare, y subit une inspection de sécurité (WAF, protection DDoS), puis est encapsulé dans le tunnel jusqu'à mon contrôleur d'ingress **Traefik v3**.
+### 2. Configuration OS & Sécurité (Ansible)
+Une fois les VMs en ligne et leurs adresses IP résolues par Terraform, Ansible prend le relais pour appliquer les configurations de base :
+* Mise à jour du système et installation des paquets indispensables (`curl`, `sudo`).
+* Durcissement de la configuration SSH (désactivation de l'authentification par mot de passe, changement de port par défaut).
+* Configuration des points de montage disques locaux (`local-lvm`) pour accueillir l'environnement d'exécution du cluster.
 
-### 2. Flux Entrants Administratifs (Tailscale Mesh VPN)
-Pour l'accès technique nomade (accès aux dashboards Proxmox, Portails de logs Dozzle, instances Grafana) :
-- L'administrateur se connecte via son client Tailscale.
-- Le trafic transite de manière chiffrée de pair à pair jusqu'à la passerelle OPNsense.
-- OPNsense applique les règles de pare-feu de l'interface Tailscale pour aiguiller de manière sécurisée l'administrateur vers les IPs privées des services du backbone de gestion.
+### 3. Orchestration Applicative & Moteur GitOps (ArgoCD)
+La gestion du cycle de vie des applications n'utilise **aucun outil local ou contrôleur Helm interne décentralisé**. À la place, une mécanique GitOps centralisée via **ArgoCD** pilote l'ensemble du cluster K3s. 
+
+Ansible installe ArgoCD immédiatement après le déploiement du cluster et injecte une clé de déploiement SSH générée à la volée. ArgoCD utilise cette clé pour s'authentifier de manière sécurisée auprès du dépôt privé `k3s`, synchronisant automatiquement l'état désiré des microservices (Calico CNI, Traefik, monitoring, applications).
 
 ---
 
-## Protection au Niveau Application (Layer 7)
+## 📝 Procédure de Déploiement (Pipeline CI/CD & Bootstrap)
 
-Au-delà du filtrage par paquets opéré par OPNsense, la sécurité réseau est renforcée au plus près des applications :
-- **Calico CNI (Network Policies) :** Au sein de Kubernetes, Calico applique des règles d'isolation micro-spécifiques. Par exemple, le pod du tunnel Cloudflare est explicitement interdit de communiquer avec un autre pod que celui du Portfolio Markdown, bloquant tout mouvement latéral au sein du cluster.
-- **CrowdSec Integration :** Traefik v3 analyse les requêtes HTTP entrantes en temps réel. Les bouncers CrowdSec locaux interrogent l'agent d'analyse de logs pour bloquer instantanément (via des listes de blocage distribuées ou des détections comportementales) les requêtes malveillantes ou les tentatives de scan agressives directement à la frontière du cluster.
+Afin d'assurer un pipeline CI/CD complet et standardisé, l'exécution des plans Terraform et des playbooks Ansible est entièrement prise en charge de manière automatisée par notre instance **Ansible Semaphore**. 
+
+Pour recréer manuellement l'infrastructure cible complète à partir de zéro, la suite de commandes suivante détaille la logique séquentielle exécutée en arrière-plan par le runner d'automatisation :
+
+```bash
+# Étape 1 : Cloner le dépôt d'infrastructure
+git clone [https://github.com/richpea1982/infra-homelab.git](https://github.com/richpea1982/infra-homelab.git)
+cd infra-homelab/terraform
+
+# Étape 2 : Initialisation et application Terraform
+terraform init
+terraform plan -out=tfplan
+terraform apply tfplan
+
+# Étape 3 : Exécution du Playbook Ansible de base (Configuration OS)
+cd ../ansible
+ansible-playbook -i inventory.ini site.yml --tags "base,security"
+
+# Étape 4 : Déploiement du cluster K3s (HA Control Plane via Ansible)
+ansible-playbook -i inventory.ini playbooks/deploy-k3s.yml
+
+# Étape 5 : Bootstrap de la couche GitOps (ArgoCD)
+ansible-playbook -i inventory.ini playbooks/bootstrap-argocd.yml
+```
+
+> * Note sur l'étape 4 : Ce playbook initialise le nœud de bootstrap (`2021`), extrait le jeton d'authentification de l'etcd embarqué, puis joint les nœuds `2022` et `2023` pour former le plan de contrôle hautement disponible.
+> * Note sur l'étape 5 : Ce playbook déploie l'opérateur ArgoCD, configure le secret SSH contenant la clé de déploiement privée vers le dépôt `richpea1982/k3s`, et applique l'application racine (Root App). À partir de cet instant, ArgoCD prend le contrôle exclusif du cycle de vie de Kubernetes.
+
+---
+
+## 🎯 Architecture Cible : Redondance de l'accès Cluster via `kube-vip`
+
+```mermaid
+graph TD
+    VIP[VIP Virtuelle d'Entrée: 10.0.20.20]
+    
+    subgraph Nodes [Control Plane K3s]
+        N1[k3s-pve2<br>10.0.20.21]
+        N2[k3s-pve3<br>10.0.20.22]
+        N3[k3s-pve4<br>10.0.20.23]
+    end
+
+    VIP -->|Gratuitous ARP Elu| N1
+    VIP -.->|Failover Bascule| N2
+    VIP -.->|Failover Bascule| N3
+```
+
+Dans l'état cible de l'infrastructure, l'accès administratif au cluster (via `kubectl`) ainsi que les requêtes internes de routage ne doivent pas dépendre d'une IP physique unique. 
+
+* **Objectif Technique** : Implémenter une adresse IP virtuelle flottante (`10.0.20.20`) gérée de manière transparente par `kube-vip`.
+* **Mécanisme** : `kube-vip` sera déployé directement via les manifests d'auto-déploiement de K3s (`/var/lib/rancher/k3s/server/manifests`). Il utilise le mode ARP/Gratuitous ARP pour élire un nœud leader parmi le Control Plane. En cas de perte de l'hôte `k3s-pve2`, la VIP basculera instantanément sur `k3s-pve3` ou `k3s-pve4` sans coupure pour le trafic réseau ou le moteur de déploiement continu d'ArgoCD.
+
+---
+
+## 🌐 Connectivité Distante & Philosophie FOSS (Remplacement Tailscale par WireGuard)
+
+En accord strict avec une philosophie axée sur le logiciel libre (*FOSS - Free and Open Source Software*) et la souveraineté des données (*Self-hosted first*), l'infrastructure intègre une transition vers **WireGuard** en tant que remplacement direct (*drop-in replacement*) de la solution tierce Tailscale. 
+
+* **Contrainte Technique (CGNAT)** : La connexion internet domestique fournie par l'opérateur (ISP) utilise un mécanisme de CGNAT (Carrier-Grade NAT). Par conséquent, le routeur local ne possède aucune adresse IP publique routable, interdisant l'ouverture de ports standards ou l'exposition directe de serveurs VPN traditionnels.
+* **Solution d'Architecture MESH** : Pour contourner cette limitation sans dépendre de serveurs de coordination tiers propriétaires, l'architecture prévoit le provisionnement automatisé d'un serveur cloud externe (VPS) doté d'une IP publique fixe. Ce serveur cloud agit exclusivement comme un nœud de rebond public (*WireGuard Bounce Server*). Les nœuds du homelab initient une connexion sortante persistante vers ce relais cloud, permettant ainsi de maintenir un réseau maillé sécurisé et entièrement auto-hébergé, capable d'acheminer le trafic distant entrant directement vers le cluster K3s de manière transparente.
 
 ---
 
 * **[Suivant : Services & Applications →](/services.html)**
 * **[← Accueil](/index.html)**
+
+---
