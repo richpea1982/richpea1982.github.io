@@ -6,7 +6,7 @@ nav_order: 3
 
 # IaC & Automatisation de l'Infrastructure
 
-Cette page décrit la chaîne de déploiement automatisée de l'infrastructure. L'intégralité du cycle de vie des ressources (du provisionnement matériel au déploiement des applications) est gérée de manière déclarative à travers deux dépôts Git distincts : `infra-homelab` (l'infrastructure de base) et `k3s` (les ressources applicatives).
+Cette page décrit la chaîne de déploiement automatisée de l'infrastructure. L'intégralité du cycle de vie des ressources (du provisionnement matériel au déploiement des applications) est gérée de manière déclarative à travers deux dépôts Git distincts : `infra-homelab` (l'infrastructure de base) et `k3s` (les ressources applicatives). Toute l'exécution de ce workflow est orchestrée de manière centralisée via notre plateforme de CI/CD.
 
 ---
 
@@ -22,7 +22,7 @@ graph TD
     end
 
     subgraph Provision [Couche Core]
-        C[Terraform + Ansible]
+        C[Pipeline CI/CD : Terraform + Ansible via Semaphore]
     end
 
     subgraph K3sCluster [Orchestrateur]
@@ -44,11 +44,11 @@ graph TD
 ## 🛠️ Le Workflow de Provisioning en 3 Couches
 
 ### 1. Provisioning Infrastructure (Terraform)
-Le module Terraform s'interface avec l'API Proxmox VE pour créer les machines virtuelles à partir de templates Cloud-Init (Debian 12). Les clés SSH publiques des administrateurs et la configuration réseau initiale (VLAN, IPs statiques) sont injectées automatiquement lors de la création de la ressource.
+Le module Terraform s'interface avec l'API Proxmox VE pour créer les machines virtuelles à partir de templates Cloud-Init (Debian 12). L'agent QEMU (`qemu-guest-agent`) est directement activé et injecté à cette étape afin de permettre à Terraform de découvrir dynamiquement les adresses IP de l'infrastructure via ses *outputs*. Les clés SSH publiques des administrateurs et la configuration réseau initiale (VLAN, IPs statiques) sont injectées automatiquement lors de la création de la ressource.
 
 ### 2. Configuration OS & Sécurité (Ansible)
-Une fois les VMs en ligne, Ansible prend le relais pour appliquer les configurations de base :
-* Mise à jour du système et installation des paquets indispensables (`curl`, `sudo`, `qemu-guest-agent`).
+Une fois les VMs en ligne et leurs adresses IP résolues par Terraform, Ansible prend le relais pour appliquer les configurations de base :
+* Mise à jour du système et installation des paquets indispensables (`curl`, `sudo`).
 * Durcissement de la configuration SSH (désactivation de l'authentification par mot de passe, changement de port par défaut).
 * Configuration des points de montage disques locaux (`local-lvm`) pour accueillir l'environnement d'exécution du cluster.
 
@@ -59,13 +59,15 @@ Ansible installe ArgoCD immédiatement après le déploiement du cluster et inje
 
 ---
 
-## 📝 Procédure de Déploiement (Bootstrap)
+## 📝 Procédure de Déploiement (Pipeline CI/CD & Bootstrap)
 
-Pour recréer l'infrastructure cible complète à partir de zéro, la suite de commandes suivante est exécutée depuis le nœud d'automation :
+Afin d'assurer un pipeline CI/CD complet et standardisé, l'exécution des plans Terraform et des playbooks Ansible est entièrement prise en charge de manière automatisée par notre instance **Ansible Semaphore**. 
+
+Pour recréer manuellement l'infrastructure cible complète à partir de zéro, la suite de commandes suivante détaille la logique séquentielle exécutée en arrière-plan par le runner d'automatisation :
 
 ```bash
 # Étape 1 : Cloner le dépôt d'infrastructure
-git clone [https://github.com/richpea1982/infra-homelab.git](https://github.com/richpea1982/infra-homelab.git)
+git clone https://github.com/richpea1982/infra-homelab.git
 cd infra-homelab/terraform
 
 # Étape 2 : Initialisation et application Terraform
@@ -109,10 +111,11 @@ graph TD
 Dans l'état cible de l'infrastructure, l'accès administratif au cluster (via `kubectl`) ainsi que les requêtes internes de routage ne doivent pas dépendre d'une IP physique unique. 
 
 * **Objectif Technique** : Implémenter une adresse IP virtuelle flottante (`10.0.20.20`) gérée de manière transparente par `kube-vip`.
-* **Mécanisme** : `kube-vip` sera déployé directement via les manifests d'auto-déploiement de K3s (`/var/lib/rancher/k3s/server/manifests`). Il utilisons le mode ARP/Gratuitous ARP pour élire un nœud leader parmi le Control Plane. En cas de perte de l'hôte `k3s-pve2`, la VIP basculera instantanément sur `k3s-pve3` ou `k3s-pve4` sans coupure pour le trafic réseau ou le moteur de déploiement continu d'ArgoCD.
+* **Mécanisme** : `kube-vip` sera déployé directement via les manifests d'auto-déploiement de K3s (`/var/lib/rancher/k3s/server/manifests`). Il utilise le mode ARP/Gratuitous ARP pour élire un nœud leader parmi le Control Plane. En cas de perte de l'hôte `k3s-pve2`, la VIP basculera instantanément sur `k3s-pve3` ou `k3s-pve4` sans coupure pour le trafic réseau ou le moteur de déploiement continu d'ArgoCD.
 
 ---
 
 * **[Suivant : Réseau →](/networking.html)**
 * **[← Retour à la Vue d'ensemble](/infrastructure.html)**
+
 ---
