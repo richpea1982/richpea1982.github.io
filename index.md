@@ -1,58 +1,80 @@
 ---
 layout: default
-title: Accueil
-nav_order: 1
+title: Vue d'ensemble de l'infrastructure
+nav_order: 2
 ---
 
-## 🚀 Mon Parcours : De la Restauration à l'Ingénierie Système
+# Vue d'ensemble de l'infrastructure
 
-Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilise mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
-
-### 📈 L'Évolution de mon Homelab (L'école de la contrainte matérielle)
-
-Mon architecture actuelle à 5 machines n'est pas née du jour au lendemain. Elle a évolué étape par étape, au fil des résolutions de pannes, de l'évolution des besoins et de la mise à l'échelle du matériel :
-
-* **An 1 (Le Déclic) :** Récupération d'un vieux PC portable. Début des expérimentations avec la CLI Linux et le dual-boot. C'est là que j'ai découvert le contrôle total du système et que ma passion pour l'IT est née.
-* **An 2 (Le Premier Défi en Production) :** Déploiement d'un site WordPress auto-hébergé pour l'entreprise de ma femme sur le free tier de Google Cloud Platform (GCP). Ma première expérience de gestion d'instances Linux distantes.
-* **An 4 (Le Passage au Local) :** Achat d'un mini-PC pour héberger le site de ma femme localement sous **Proxmox VE**. Mise en place d'un **Tunnel Cloudflare** pour les flux entrants, isolation des charges de travail dans des LXC, et déploiement d'une stack de monitoring basique et de Vaultwarden.
-* **An 5 (Le Virage de l'Automatisation) :** Ajout d'une deuxième machine physique sous Docker bare-metal. Migration du point d'entrée, du monitoring, et intégration de Traefik pour le routage interne aux côtés d'applications comme Seafile, Jellyfin et Immich. **Étape majeure :** Reconstruction complète du lab à partir de zéro via **Terraform et Ansible** (IaC).
-* **An 5.5 (La Segmentation Réseau) :** Intégration d'un switch administrable et d'une appliance virtuelle **VyOS** pour implémenter un routage inter-VLAN et une isolation stricts.
-* **An 6 (Consolidation & Construction du Cluster) :** Récupération d'un ordinateur portable supplémentaire et d'un ancien PC fixe. Pour optimiser l'utilisation de mes ressources matérielles, j'ai abandonné VyOS au profit d'un pare-feu **OPNsense** virtualisé dans Proxmox. Cela m'a permis de scinder mon environnement entre un backbone de gestion hautement résilient et un cluster de calcul en haute disponibilité.
+Cette page détaille la topologie physique et virtuelle cible du homelab, mettant en évidence les choix d'ingénierie et la planification des composants pour garantir la haute disponibilité. 
+Le dépôt Git `infra-homelab` constitue la **source unique de vérité**.
 
 ---
 
-## 🧠 Philosophie d'Ingénierie & Méthode d'Apprentissage
+## Architecture cible (5 nœuds physiques)
 
-> "Concevoir une infrastructure de base solide comme un roc avant de construire un cluster par-dessus."
+**Backbone de gestion (2 nœuds)** - **pve1 — Nœud de gestion spécialisé** : OPNsense, Proxmox Backup Server (PBS), Nœud d'automation (Terraform, Ansible, Semaphore). Maintenu hors-cluster pour éliminer tout problème d'interdépendance ("œuf et la poule").  
+- **NAS Bare-Metal** : Debian + ZFS RAID‑Z2 (6 × 1 TB) ; point de terminaison de stockage objet MinIO S3 (endpoint canonicalisé).
 
-* **GitOps & Automatisation Totale :** J'applique une règle stricte : "aucune modification manuelle". Du provisionnement des VMs de l'hyperviseur à la déclaration des règles de pare-feu, tout est poussé sur Git et exécuté via le code.
-* **Isolation Défensive et Pragmatique du Control Plane :** Un cluster n'est stable que si l'infrastructure qui le soutient l'est aussi. J'ai délibérément isolé mon routage réseau cœur (OPNsense), mes sauvegardes (PBS) et mes moteurs d'automatisation sur une machine dédiée, totalement en dehors du cluster. Cela me protège du problème de "l'œuf et la poule", où une panne de cluster ferait s'effondrer mes outils de déploiement ou mes accès réseau principaux.
-* **Posture face à l'IA Générative :** J'utilise activement l'IA comme un partenaire de *pair-programming* pour accélérer l'écriture des syntaxes de configuration répétitives (YAML, HCL). Cependant, je pratique l'**ingénierie inverse** sur chaque bloc : je ne déploie jamais de configurations automatisées sans être capable de dépanner, sécuriser et expliquer manuellement les mécanismes système sous-jacents (paramètres du noyau Linux, tables de routage CNI).
-
----
-
-## 🛠️ Architecture de Production Actuelle - 5 Nœuds (En développement actif)
-
-Mon environnement est divisé en une couche de calcul de production qui s'exécute directement au-dessus d'un backbone de gestion hautement résilient :
-
-### 1. Le Cœur de l'Infrastructure (2 Nœuds Indépendants)
-* **Nœud Cœur Infra (pve1) :** Délibérément maintenu hors du cluster de calcul principal. Il héberge un pare-feu virtualisé **OPNsense** (point d'entrée de routage de tout le réseau), une instance **Proxmox Backup Server (PBS)**, et mon **nœud de contrôle d'automatisation** qui provisionne et configure l'environnement.
-* **Serveur de Stockage (NAS Bare-Metal) :** Un PC fixe dédié faisant office de NAS haute capacité, équipé d'un **pool ZFS RAID-Z2 de 6 disques (6 x 1 To)**. Cette configuration offre une tolérance de panne de 2 disques pour 4 To de stockage utile hautement protégé.
-
-### 2. La Couche de Calcul (Cluster Hyperconvergé à 3 Nœuds)
-* **Cluster Proxmox VE + Ceph :** Composé de 3 nœuds hyperviseurs physiques exécutant un **pool de stockage distribué Ceph** pour les composants stateful. Cette stack soutient deux sites WordPress en production : `petitsanglais`, un petit site que j'ai construit et que je maintiens moi-même, et `hantaweb`, une boutique e-commerce WooCommerce complète que j'héberge et administre au niveau de l'infrastructure (la conception et le développement applicatif étant gérés par le propriétaire du site).
-* **Microservices Conteneurisés :** Un cluster **Kubernetes K3s à 3 nœuds** avec Etcd embarqué, actuellement en cours de finalisation. Je valide actuellement le bootstrapping des nœuds du control-plane en HA et les comportements d'auto-guérison (*self-healing*) avant d'y migrer mes applications stateless et mes plateformes internes.
-
-### 3. Architecture Réseau & Sécurité
-* **Point d'Entrée Zero-Trust :** Les connexions entrantes sont gérées via des Tunnels Cloudflare, sans aucun port ouvert sur l'extérieur.
-* **Micro-Segmentation :** Le trafic est strictement segmenté en VLANs dédiés (Management, DMZ, Production Interne). Au sein du cluster Kubernetes, les politiques réseau de **Calico CNI** imposent une isolation stricte des pods, tandis qu'un contrôleur d'ingress **Traefik v3** route le trafic à travers des bouncers **CrowdSec** locaux pour une protection HTTP à la couche 7.
+**Couche de calcul & Stockage (3 nœuds)** - **pve2, pve3, pve4** — Hyperviseurs Proxmox VE configurés en cluster HA.
+- **Stockage distribué Ceph** : Pool répliqué sur pve2/pve3/pve4 (facteur de réplication = 3, min 2). Dédié exclusivement aux services stateful hors-Kubernetes nécessitant une haute disponibilité (VMs WordPress, LXC Seafile, etc.).
+- **K3s** : Cluster K3s distribué gérant sa propre résilience interne pour les microservices conteneurisés.
 
 ---
 
-## 🎯 Statut du Déploiement & Méthodologie
+## Proxmox / Service mapping
 
-L'architecture présentée sur ce site représente l'**état final cible désiré**. Chaque étape du déploiement a été entièrement pensée, mûrie et planifiée en amont avant l'écriture du moindre bloc de code. L'état réel et actuel de la configuration de mon homelab est directement traçable dans mon [dépôt Git infra-homelab](https://github.com/richpea1982/infra-homelab). Cette approche rigoureuse standardise l'ensemble de mon documentation ; cette précision méthodologique s'applique par défaut à toutes les sections suivantes.
+### Nœud de Gestion Spécialisé (pve1)
+
+| Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Vlan &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `OPNsense` | 110 | VM | 10 | local-lvm | Router / Pare-feu | 3 Cœurs | 4Go |
+| `PBS` | 130 | VM | 10 | local-lvm | Serveur de sauvegarde | 2 Cœurs | 4Go |
+| `Nœud d'automation` | 1040 | LXC | 10 | local-lvm | Orchestration IaC & Semaphore | 2 Cœurs | 4Go |
+
+### Cluster Compute & Stockage (pve2, pve3, pve4)
+
+Conformément à la convention d'infrastructure, le préfixe de l'ID des machines virtuelles détermine leur appartenance réseau (ex: `2xxx` pour le VLAN 20, `4xxx` pour le VLAN 40).
+
+| Nom de la VM &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | ID VM &nbsp;&nbsp;&nbsp;&nbsp; | Nœud Proxmox &nbsp;&nbsp;&nbsp;&nbsp; | Type &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Vlan &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Datastore &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Usage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | CPU &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Ram &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `k3s-pve2` | 2021 | pve2 | VM | 20 | local-lvm | K3s control-plane (Bootstrap) / worker | 3 Cœurs | 6Go |
+| `k3s-pve3` | 2022 | pve3 | VM | 20 | local-lvm | K3s control-plane / worker | 3 Cœurs | 6Go |
+| `k3s-pve4` | 2023 | pve4 | VM | 20 | local-lvm | K3s control-plane / worker | 3 Cœurs | 5Go |
+| `hantaweb` | 4011 | pve3 HA | VM | 40 | ceph-storage | WordPress (WooCommerce public) | 2 Cœurs | 4Go |
+| `petitsanglais` | 4012 | pve4 HA | VM | 40 | ceph-storage | WordPress (Site vitrine public) | 1 Cœur | 1Go |
+| `Seafile` | 4015 | pve3 HA | LXC | 40 | ceph-storage | Stockage de fichiers cloud privé | 2 Cœurs | 2Go |
+| `Jellyfin` | 3010 | pve2 | LXC | 30 | local-lvm | Serveur Multimédia (Data sur NAS) | 3 Cœurs | 6Go |
+| `Photoprism` | 3011 | pve2 | LXC | 30 | local-lvm | Indexation Photo (Data sur NAS) | 3 Cœurs | 6Go |
+
+> 💡 **Raisonnement du Layout de Stockage : Ceph vs Local-LVM**
+> 
+> L'allocation des datastores répond à un arbitrage strict entre latence disque et tolérance aux pannes :
+> * **Exclusion de Ceph pour K3s** : Les disques système des nœuds K3s (`2021-2023`) sont positionnés sur le stockage `local-lvm` (SSD locaux). Le moteur de consensus d'etcd est extrêmement sensible à la latence d'écriture synchrone (*fsync*). Utiliser un stockage réseau distribué comme Ceph pour héberger l'etcd introduirait des variations de latence réseau risquant de briser le quorum de l'orchestrateur.
+> * **Rétention de Ceph pour les Services Hors-K3s** : À l'inverse, les instances WordPress (`hantaweb`, `petitsanglais`) et le cloud `Seafile` bénéficient pleinement du datastore `ceph-storage`. En cas de panne matérielle brutale d'un hyperviseur, Proxmox VE migre et redémarre instantanément ces VMs sur un nœud sain sans aucune perte de données grâce au stockage partagé sous-jacent.
 
 ---
 
-**[Suivant : Vue d'ensemble de l'infrastructure →](/infrastructure.html)**
+### K3s / Service mapping
+
+| Service / App &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Namespace &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Exposed Via &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Access Domain / URL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Network Security (Calico Policy) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Storage (PV/PVC) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `CF Tunnel` | `networking` | Cloudflare Daemon | `richard.pearsalls.fr` | Autorisé à communiquer UNIQUEMENT avec le pod Ingress | Aucun |
+| `Traefik` | `kube-system` | Réseau Local / WG | *Routage Interne* | Contrôle global du routeur d'ingress | Aucun (Apatride) |
+| `Prometheus` | `monitoring` | Ingress Traefik | *Interne Uniquement* | Isolé ; sortie uniquement pour la collecte de métriques | `prometheus-pvc` |
+| `Grafana` | `monitoring` | Traefik -> WG Local | `grafana.local.lan` | Restreint aux IPs admins authentifiées | `grafana-pvc` |
+| `Dozzle` | `monitoring` | Traefik -> WG Local | `logs.local.lan` | Restreint au namespace de monitoring | Aucun |
+| `BenToPDF` | `tools` | Traefik -> WG Local | `pdf.local.lan` | Backend isolé | `bento-pvc` |
+| `MD Portfolio` | `web` | CF Tunnel -> Traefik | `richard.pearsalls.fr` | Ingress depuis CF autorisé ; egress refusé | `portfolio-assets` |
+
+---
+
+## Réseau physique et plan de continuité
+
+* **Contraintes Matérielles** : Chaque hôte Proxmox de calcul dispose d'une interface physique réseau unique de 1 Gbps.
+* **Stratégie d'Isolation Physique** : Pour assurer les performances du stockage Ceph sans saturer la bande passante utilisateur et d'administration, l'architecture cible prévoit l'ajout d'adaptateurs USB-to-Ethernet Gigabit. Les interfaces internes intégrées (*onboard*) sont dédiées exclusivement à la réplication des blocs Ceph à travers un commutateur non administré isolé. Le trafic de gestion de l'hyperviseur (VLAN 10) et les flux applicatifs des VMs/Pods transitent de manière étanche via les liaisons USB de secours.
+
+---
+
+* **[Suivant : IaC et Automation →](/iac-automation.html)**
+* **[← Accueil](/index.html)**

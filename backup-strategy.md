@@ -1,65 +1,94 @@
 ---
 layout: default
-title: Sauvegarde & Reprise
-nav_order: 7
+title: Stratégie de Sauvegarde & Résilience
+nav_order: 4
 ---
 
-# Sauvegarde & Reprise (Backup & Disaster Recovery)
+# Stratégie de Sauvegarde & Résilience
 
-La stratégie de sauvegarde et le Plan de Reprise d'Activité (PRA) de ce homelab reposent sur la séparation stricte entre le plan de calcul (le cluster K3s/Ceph) et le plan de gestion (`pve1` et le NAS). En cas de sinistre majeur, l'infrastructure est conçue pour être reconstruite de manière déterministe grâce à l'approche *Infrastructure-as-Code*.
-
----
-
-## 1. Topologie des Sauvegardes
-
-Le système de sauvegarde est centralisé, immuable et physiquement séparé des hyperviseurs de production.
-
-* **Proxmox Backup Server (PBS)** : Hébergé sous forme de machine virtuelle sur le nœud de gestion hors-cluster `pve1`. Il se charge de capturer des instantanés (snapshots) réguliers et dédupliqués de l'ensemble des VMs (comme les instances WordPress `hantaweb` et `petitsanglais`) et des conteneurs LXC.
-* **Le Socle de Stockage (NAS Bare-Metal)** : Les données de sauvegarde ne résident pas sur `pve1`. Elles sont stockées sur le NAS physique, au sein du pool ZFS RAID-Z2, garantissant une tolérance à la panne de deux disques physiques.
-* **Optimisation ZFS** : Des jeux de données (*datasets*) spécifiques ont été créés pour optimiser les performances de sauvegarde, notamment `pbs-backups`, `pve1-backups` et `k3s-backups`, tous configurés avec un `recordsize` de `1m` adapté aux gros blocs de données.
-
-## 2. Sauvegarde des États et Configurations
-
-Dans une architecture orientée GitOps, la sauvegarde du "code" et de "l'état" est tout aussi critique que celle des données applicatives.
-
-* **Code Source (Source de Vérité)** : L'intégralité de la configuration, des modules Terraform aux playbooks Ansible en passant par les chartes Helm, est versionnée sur le dépôt Git distant `infra-homelab`.
-* **Terraform State (MinIO S3)** : L'état de l'infrastructure provisionnée (`terraform.tfstate`) est stocké de manière sécurisée sur le backend S3 MinIO auto-hébergé sur le NAS. La fonction *Object Locking* de MinIO y est activée pour empêcher toute corruption ou écrasement accidentel du state lors des pipelines CI/CD.
-* **Configurations Applicatives** : Les bases de données internes (comme celles de K3s/Etcd ou de l'interface Semaphore) bénéficient de sauvegardes automatisées dirigées vers le dataset ZFS `k3s-backups` via des points de montage NFS.
-
-## 3. Sauvegarde Externalisée Hors Site — Amazon S3 Glacier (Planifié)
-
-Une fois les bibliothèques média (Jellyfin, Photoprism) entièrement indexées et validées, une copie froide sera répliquée vers **Amazon S3 Glacier** afin de compléter la règle 3-2-1 avec une copie véritablement hors site, en dehors de mon réseau physique — ce que ni PBS ni le NAS ne peuvent offrir seuls.
-
-**Pourquoi Glacier plutôt qu'un S3 standard ou un second NAS distant :**
-* Le coût au Go est très faible comparé à un stockage S3 standard ou à un NAS distant loué, ce qui est adapté à des volumes de données importants (photos, médias) rarement consultés.
-* Ces données sont en grande partie irremplaçables (photos personnelles) mais n'ont pas besoin d'être disponibles immédiatement en cas de sinistre — contrairement au state Terraform ou au cluster K3s, qui doivent être restaurables en quelques minutes, une bibliothèque photo peut attendre plusieurs heures.
-
-**Limitations connues, et pourquoi elles sont acceptables pour cet usage :**
-* **Délai de récupération** : selon la classe choisie, la restauration peut prendre de quelques minutes (Expedited, coûteux) à plusieurs heures (Standard), voire jusqu'à 12h (Bulk / Deep Archive). C'est acceptable car Glacier n'est pas ma ligne de restauration rapide — ce rôle reste assuré par PBS et le ZFS local, qui restent la première ligne de défense.
-* **Coûts de sortie (egress)** : une restauration complète depuis Glacier peut générer des frais de sortie significatifs chez AWS. Ce risque est accepté car ce scénario correspond à un cas de dernier recours (perte simultanée du NAS et de PBS), jugé statistiquement rare compte tenu de la redondance déjà en place (RAID-Z2 + PBS).
-* **Durée de rétention minimale facturée** : Glacier impose une durée minimale de stockage facturée (90 jours en Flexible Retrieval, 180 jours en Deep Archive). Cela correspond bien à l'usage prévu ici : un dépôt d'archivage long terme, pas un stockage à rotation fréquente.
-
-**Mise en œuvre prévue :**
-* Synchronisation planifiée (`aws s3 sync` ou `rclone`), déclenchée mensuellement via un job Ansible plutôt qu'en continu, pour limiter les coûts de requêtes.
-* Chiffrement côté client avant l'envoi, afin de ne jamais exposer de données en clair chez un tiers.
-
-## 4. Plan de Reprise d'Activité (Disaster Recovery)
-
-En cas de perte matérielle totale ou de corruption sévère du cluster de calcul (`pve2`, `pve3`, `pve4`), la procédure de reconstruction à froid (*Cold Recovery*) suit un ordonnancement strict :
-
-1. **Restauration du Cœur de Gestion** :
-   - Reconstruction ou redémarrage du **NAS Bare-Metal** pour retrouver l'accès immédiat aux archives ZFS et au service MinIO.
-   - Restauration du nœud physique `pve1` (incluant OPNsense pour le routage, PBS pour l'accès aux archives, et le nœud d'automatisation Ansible).
-2. **Récupération du State et du Réseau** :
-   - Le nœud d'automatisation se reconnecte au bucket `homelab-tf-state` sur MinIO pour récupérer l'état exact de l'infrastructure avant le crash.
-3. **Provisionnement Automatisé (IaC)** :
-   - Exécution de `terraform apply` pour recréer instantanément les machines virtuelles du cluster de calcul à leur état nominal stable (CPU, RAM, VLANs).
-4. **Bootstrapping K3s & GitOps** :
-   - Exécution des playbooks Ansible pour reformer le cluster Kubernetes Haute Disponibilité.
-   - Le contrôleur Helm interne synchronise le dépôt Git et redéploie l'intégralité de la pile logicielle (Traefik, CrowdSec, outils de monitoring).
-5. **Restauration des Données Stateful** :
-   - Réinjection des données critiques (bases de données WordPress, volumes persistants spécifiques) à partir des snapshots Proxmox Backup Server directement vers le stockage distribué Ceph fraîchement reconstruit.
+Cette page détaille la politique de protection des données et de reprise après sinistre (Disaster Recovery) mise en œuvre sur l'infrastructure. L'architecture combine des sauvegardes au niveau infrastructure (bloc) et au niveau applicatif (orchestrateur) pour respecter une **règle du 3-2-1** stricte.
 
 ---
 
-* **[← Accueil](/index.html)**
+## 📊 Flux de Sauvegarde Multi-Niveaux
+
+Le schéma suivant illustre la cinématique de sauvegarde, mettant en évidence l'intégration de Velero pour la couche Kubernetes et de Restic/PBS pour le reste de l'infrastructure :
+
+```mermaid
+graph TD
+    subgraph Sources [Sources de Données]
+        K3s_API[K3s : Métadonnées & Vol. Persistants<br>API Kubernetes]
+        K3s_VM[K3s : Disques Système Nodes<br>local-lvm]
+        Stateful[VMs WordPress & LXC Seafile<br>ceph-storage]
+        NAS_Files[NAS Bare-Metal<br>ZFS Pool]
+    end
+
+    subgraph Target_Local [Stockage & Rétention Locale]
+        MinIO[MinIO S3 Bare-Metal<br>Stockage Objet Local]
+        PBS[Proxmox Backup Server<br>Sauvegarde Bloc Dédupliquée]
+        Restic[Restic CLI<br>Sauvegarde Fichiers Chiffrée]
+        USB[Disque Externe USB<br>Rétention Physique Removible]
+    end
+
+    subgraph Target_Cloud [Rétention Offsite : Cible]
+        S3[Cloud Object Storage<br>AWS S3 / Backblaze B2]
+    end
+
+    K3s_API -->|Sauvegarde Native API / Kopia| Velero[Velero Controller]
+    Velero -->|Objets & Snapshots PV| MinIO
+    K3s_VM -->|Snapshots Hôte| PBS
+    Stateful -->|Snapshots Hôte| PBS
+    NAS_Files -->|Backup Granulaire| Restic
+    Restic -->|Dépôt Chiffré| USB
+    MinIO -.->|Réplication Chiffrée Tier 3| S3
+    Restic -.->|Rclone Sync Tier 3| S3
+```
+
+---
+
+## 🛠️ Implémentation Technique des Outils de Sauvegarde
+
+### 1. Sauvegarde Applicative Kubernetes (Velero)
+Dédié à la capture de l'état logique interne du cluster K3s et de ses données persistantes.
+* **Fonctionnement** : Déployé comme un opérateur au sein du cluster, **Velero** interroge l'API Kubernetes pour sauvegarder les manifests (CRDs, Secrets, ConfigMaps, Ingress) et orchestre la capture des volumes persistants (PV) via son plug-in de snapshot natif (ou intégration Kopia/Restic).
+* **Destination** : Les sauvegardes sont poussées directement vers un compartiment dédié sur l'instance **MinIO S3** s'exécutant sur le NAS Bare-Metal.
+* **Avantage Clé** : Permet une restauration granulaire au niveau de l'orchestrateur (ex: restaurer un seul namespace ou annuler un déploiement corrompu) sans avoir à restaurer l'intégralité de la VM sous-jacente.
+
+### 2. Sauvegarde Niveau Bloc (Proxmox Backup Server)
+Dédié à la restauration rapide et complète de l'enveloppe matérielle virtuelle.
+* **Fonctionnement** : La VM spécialisée `PBS` (sur `pve1`) effectue des snapshots incrémentaux au niveau bloc avec déduplication globale.
+* **Périmètre** : 
+    * OS et disques système des nœuds K3s (`2021-2023`) situés sur le datastore `local-lvm`.
+    * Instances d'applications étatiques hors-K3s (`hantaweb`, `petitsanglais`, `Seafile`) s'exécutant sur le pool répliqué `ceph-storage`.
+
+### 3. Sauvegarde Fichiers (Restic CLI)
+Dédié à la capture granulaire des données du stockage de masse non conteneurisé.
+* **Fonctionnement** : Restic sauvegarde, déduplique et chiffre les données côté client au niveau du système de fichiers du NAS Bare-Metal et des volumes lourds montés par les LXCs (Jellyfin, Photoprism).
+* **Destination** : Poussé vers un espace de stockage local, puis dupliqué sur un disque externe USB amovible.
+
+---
+
+## 🎯 Architecture Cible (Tier 3) : Évacuation Cloud Étanche
+
+Pour parer aux sinistres physiques (incendie, vol, dégât des eaux), la couche de stockage objet locale (MinIO) et les dépôts Restic locaux feront l'objet d'une réplication externe automatisée.
+
+* **Technologie** : Synchronisation différentielle programmée via les politiques de réplication native de MinIO ou via `rclone`.
+* **Cible** : Un compartiment de stockage objet chiffré chez **Backblaze B2** ou **AWS S3** (classe Infrequent Access).
+* **Sécurité** : Les données sont chiffrées avant transfert avec des clés gérées localement. Le fournisseur cloud n'a aucune visibilité sur le contenu des sauvegardes.
+
+---
+
+## ⏱️ Planification & Rétention
+
+| Composant / Outil | Fréquence | Cible de Stockage | Rétention (Prune) |
+| :--- | :--- | :--- | :--- |
+| **Velero (K3s Apps & PVs)** | Quotidien (01:00) | MinIO S3 (NAS) | `7 jours` |
+| **PBS (Snapshots VMs)** | Quotidien (02:00) | Datastore PBS (`pve1`) | `keep-last=7, weekly=4, monthly=12` |
+| **Restic (Données NAS)** | Quotidien (04:00) | SSD Local + USB | `keep-daily=7, weekly=4, monthly=6` |
+| **Réplication Cloud (Cible)**| Hebdomadaire | Backblaze B2 / AWS S3 | Identique à la rétention locale |
+
+---
+
+* **[Suivant : Rétrospective Technique & Leçons Apprises →](/lessons-learned.html)**
+* **[← Retour à IaC & Automatisation](/iac-automation.html)**
+---
