@@ -116,6 +116,6 @@ Dans l'état cible de l'infrastructure, l'accès administratif au cluster (via `
 ---
 
 * **[Suivant : Réseau →](/networking.html)**
-* **[← Retour à la Vue d'ensemble](/infrastructure.html)**
+* **[← Accueil](/index.html)**
 
 ---
