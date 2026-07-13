@@ -36,7 +36,7 @@ graph TD
     D -.->|Pilote| E
 ```
 
-1. **`infra-homelab`** : Contient le code Terraform (fournisseur Telmate Proxmox) pour déclarer les VMs/LXCs et les playbooks Ansible de configuration OS de base. C'est ici qu'est bootstrappé ArgoCD.
+1. **`infra-homelab`** : Contient le code Terraform (fournisseur bpg/proxmox) pour déclarer les VMs/LXCs et les playbooks Ansible de configuration OS de base. C'est ici qu'est bootstrappé ArgoCD.
 2. **`k3s`** : Dépôt applicatif géré exclusivement en GitOps par ArgoCD. Il contient les CRDs, les charts Helm (Traefik, Calico, Prometheus) et les manifests applicatifs selon le pattern "App of Apps".
 
 ---
