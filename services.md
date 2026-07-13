@@ -19,8 +19,8 @@ Le homelab sépare strictement l'exécution des services selon leur état opéra
 ### 1. Services Hors-Cluster (Proxmox LXC/VM)
 Les applications gourmandes en calcul ou nécessitant un accès de stockage massif non-cloud-native sont isolées en dehors de Kubernetes afin de maximiser les performances :
 
-- **`Jellyfin` (LXC 2010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est installé sur le stockage local-lvm.
-- **`Photoprism` (LXC 2011, pve2, VLAN 30)** : Base de données et indexation de photos, installée de manière similaire sur `pve2`.
+- **`Jellyfin` (LXC 3010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est installé sur le stockage local-lvm.
+- **`Photoprism` (LXC 3011, pve2, VLAN 30)** : Base de données et indexation de photos, installée de manière similaire sur `pve2`.
 
 - **VMs de Production WordPress (VLAN 40)** : Deux instances critiques s'exécutent en Haute Disponibilité (HA) grâce au stockage distribué Ceph :
   - **`hantaweb` (VM 4011, pve3 HA)** : Instance e-commerce WooCommerce de production (2 Cœurs CPU, 4 Go RAM).
@@ -100,9 +100,9 @@ D --> M3
 
 ```
 
-1. **Exposition Publique (Zéro-Trust)** : Le service `MD Portfolio` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du portfolio.
+1. **Exposition Publique (Zéro-Trust)** : Le service `Cloudflare` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du traefik.
 
-2. **Routage Interne / Administration** : Les outils d'infrastructure (`Grafana`, `Dozzle`, `BenToPDF`) transitent par l'Ingress **Traefik**. Ils utilisent des domaines en `.local.lan` et leur accès est filtré au niveau de la couche réseau (Calico / OPNsense) pour n'autoriser que les adresses IP d'administration authentifiées (via réseau local ou VPN WireGuard).
+2. **Routage Interne / Administration** : Les outils d'infrastructure (`Grafana`, `Prometheus`, `Dozzle`) transitent par l'Ingress **Traefik**. Ils utilisent des domaines en `.local.lan` et leur accès est filtré au niveau de la couche réseau (Calico / OPNsense) pour n'autoriser que les adresses IP d'administration authentifiées (via réseau local ou VPN WireGuard).
 
 ---
 
