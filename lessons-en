@@ -1,0 +1,294 @@
+---
+layout: default
+title: Retrospective & Lessons Learned
+nav_order: 5
+---
+
+# Technical Retrospective & Lessons Learned
+
+This page serves as an engineering journal. It compiles real-world anomalies, dependency conflicts, and configuration errors encountered during the development and deployment of this homelab, along with the applied fixes.
+
+Documenting these resolutions demonstrates a deep understanding of the internal behavior of tools (Terraform, Ansible, Kubernetes) when faced with real-world hardware and operating system constraints.
+
+---
+
+## 🚀 Troubleshooting & Bug Fixes (Session Log)
+
+### 1. Container Microarchitectural Incompatibility (SIGILL Faults)
+* **Symptom**: Several modern container images crashed instantly at startup with a `SIGILL` (Illegal Instruction) error on K3s nodes.
+* **Cause**: By default, Terraform provisioned Proxmox VMs with a standard virtual CPU type of `kvm64`. However, recent compilation toolchains (notably the `glibc` library) enforce a baseline requiring the `x86-64-v2` CPU architecture. The `kvm64` processor masks the required modern instructions.
+* **Fix**: Modified the custom Terraform module to force passthrough mode: `cpu.type = "host"`. Containers now directly leverage the native instruction set of the underlying physical processors (Intel i5, AMD A10, i7).
+
+### 2. Calico CRDs Compatibility Break (CEL Validation Engine)
+* **Symptom**: Applying Calico CNI version `3.32.0` manifests failed during the creation of Custom Resource Definitions (CRDs).
+* **Cause**: The internal validation rules of Calico 3.32 CRDs use the CEL (Common Expression Language) function `isCIDR()`. This function requires Kubernetes API version `1.31` minimum. The K3s cluster was initially locked at version `1.30.2`.
+* **Fix**: Aligned and upgraded the global K3s version variable to the stable version `v1.31.5+k3s1` in Ansible's `group_vars`, instantly resolving the syntactic conflict.
+
+### 3. Network Variable Masking (VLAN Threading)
+* **Symptom**: K3s cluster nodes were assigned out-of-context IP addresses and defaulted to Proxmox's native unsegmented network.
+* **Cause**: Although the `vlan_id` variable was correctly declared in the `.auto.tfvars` file and typed in Terraform's global variable declarations, it was not passed to the final resource block of the VM creation module.
+* **Fix**: Corrected the binding within the Terraform code by explicitly inserting the argument `vlan_id = var.vlan_id` into the module's network interface declaration.
+
+### 4. Python Environment Conflict on Debian (PEP 668)
+* **Symptom**: The bootstrap Ansible playbook failed on the automation node when attempting to install the python package `kubernetes-client` via `pip`.
+* **Cause**: Strict protection introduced by the PEP 668 directive on Debian 12 (Externally Managed Environment). The system blocks global `pip install` usage to prevent overwriting packages managed by the `apt` package manager (specifically `PyYAML`).
+* **Fix**: Isolated the process by configuring Ansible to run its Kubernetes tasks within a dedicated virtual environment (`virtualenv`) or by preferably relying on distribution-packaged packages (`python3-kubernetes`).
+
+### 5. Helm Chart Obsolescence (CrowdSec Lifecycle)
+* **Symptom**: The ArgoCD synchronization of the CrowdSec security pod remained stuck in a *Degraded* state or returned an HTTP 404 artifact retrieval error.
+* **Cause**: The GitOps manifest pointed to a historical version of the Helm chart (`0.9.3`) that had been purged and permanently archived from the provider's upstream repositories.
+* **Fix**: Adjusted the GitOps declaration file `gitops/apps/crowdsec.yaml` to target the stable revision `0.24.0` of the chart, immediately restoring the application reconciliation loop.
+
+---
+
+## 🔁 Automation Optimizations and Idempotency
+
+Beyond blocking bug fixes, refactorings were carried out to enhance the reliability and robustness of deployment scripts:
+
+* **State Verification vs File Presence**: The K3s initialization Ansible playbook used a check based on local file presence (`stat`) to determine if the cluster was already initialized. This mechanism masked partial or corrupted installations. It was replaced by a dynamic inspection of the systemd service state (`systemctl is-active --quiet k3s`).
+* **SSH Host Key Instability**: Each VM rebuild via Terraform generated a new SSH host key pair, causing security blocks during subsequent Ansible runs (*Host key verification failed*). Integrated an idempotent task for automatic cleanup and key refreshing via `ssh-keyscan` in the preliminary phase of the playbook.
+* **Broken Vault Secret Management**: Integration error for the `vault_k3s_cluster_token` variable. The Ansible role had been updated to require a strong shared security token for etcd, but the associated encrypted Ansible Vault file had not been provisioned with this new key. The variable was canonicalized and documented in the `vault.yml` file.
+
+---
+
+## 📈 Key Takeaways for Future Projects
+
+1. **The Tool Boundary**: Clearly defining where one orchestrator stops and the next begins is vital. Entrusting application deployment to ArgoCD and OS configuration to Ansible (rather than overloading Ansible with complex Helm modules) radically simplifies debugging.
+2. **Never Trust Defaults**: Generic virtualization profiles (such as the `kvm64` CPU or lack of a VLAN tag) create unpredictable behaviors in upper layers. Validate hardware and network configurations at the lowest possible level before setting up the orchestrator.
+
+---
+# Addendum — Full Cluster Rebuild & etcd Disaster Recovery Drill
+ 
+**Status note (for you, not for publication as-is):** the etcd restore
+section below is a best-effort reconstruction after the fact, not a
+verified command log. Treat the exact flags/order as "probably right,"
+not "definitely right" — if you ever rebuild the timeline more precisely
+(shell history, journalctl timestamps), tighten this before it goes on
+the public portfolio permanently. I've flagged the soft spots inline.
+ 
+---
+ 
+## Incident A — `terraform apply -target` destroyed the entire K3s fleet
+instead of one node
+ 
+### Symptom
+A `terraform apply` scoped with `-target` against a single K3s node
+resulted in Terraform destroying and recreating **all three** K3s node
+VMs (`k3s-pve2`, `k3s-pve3`, `k3s-pve4`), not just the targeted one.
+ 
+### What's actually known
+- The intent was to target one node's `module.k3s_node["<key>"]`
+  instance.
+- The result was a full destroy/recreate across the `k3s_nodes` `for_each`
+  set.
+- The exact command invoked, and the plan output Terraform showed before
+  you approved it, weren't captured — this is the biggest gap in
+  reconstructing root cause with confidence.
+### Most likely root cause (hypothesis, not confirmed)
+Given the module structure in `terraform/main.tf`, two candidate
+explanations fit the symptom, and they're not mutually exclusive:
+ 
+1. **Shell quoting/escaping of the `for_each` index.** A `-target` value
+   like `module.k3s_node["pve2"]` contains characters (`[`, `]`, `"`)
+   that most shells will mangle unless carefully quoted (e.g.
+   `-target='module.k3s_node["pve2"]'`). If the quoting was wrong, the
+   flag can silently fail to parse as intended — some shells pass a
+   malformed target string, Terraform may error, but depending on the
+   Terraform version and how the error was handled at the terminal, it's
+   possible the apply proceeded as an **unscoped** apply instead of
+   failing closed.
+2. **`-target` narrows the *apply*, not the *plan*'s hazard surface.**
+   `-target` is explicitly documented by HashiCorp as a break-glass tool,
+   not a safe day-to-day scoping mechanism — Terraform still evaluates
+   the full dependency graph to determine what the targeted resource
+   needs, and depending on state drift (e.g. if the shared
+   `debian_cloud` image checksum/URL, or the per-node `vendor_data`
+   snippet, had changed since the last apply) a `-target` apply can still
+   trigger replacement of resources the targeted one doesn't obviously
+   "depend on" in a human sense, if Terraform's own graph says otherwise.
+**Both are plausible with the current repo layout and neither can be
+ruled out without the actual plan output from that run** — which is
+exactly why this needs a safe reproduction, not a guess treated as fact.
+ 
+### Why this matters beyond the immediate incident
+This isn't just "one bad command" — it means **`-target` cannot currently
+be trusted as a safe scoping mechanism in this repo** until the cause is
+confirmed and a safeguard is in place. Every future "just fix this one
+node" operation is at risk of repeating this until that's resolved.
+ 
+### Corrective actions taken
+- None yet applied to the Terraform code itself — this write-up is the
+  first step (documenting before fixing, so the fix is aimed at a
+  confirmed cause, not a guess).
+### Planned tests (do this before the next `-target` apply against
+production)
+1. **Stand up a throwaway scratch environment** — a single low-stakes
+   Proxmox VM (or even a second, disposable `.tfvars`/state-file pair
+   pointed at a junk MinIO bucket) that mimics the `k3s_nodes` `for_each`
+   shape with 2-3 dummy instances. Cheap to destroy, nothing depends on
+   it.
+2. **Reproduce the exact `-target` invocation** you believe you used,
+   with correct quoting, and inspect the **plan output** (`terraform
+   plan -target=... -out=tfplan`, then `terraform show tfplan`) before
+   ever running `apply`. Confirm whether the plan itself claims to touch
+   only the targeted instance.
+3. **Deliberately try the suspected bad quoting** in the same scratch
+   environment, to see whether it reproduces the full-fleet-destroy
+   behavior or errors out cleanly instead. This is the only way to turn
+   the hypothesis above into a confirmed cause.
+4. **Once root cause is confirmed**, the fix likely belongs in one (or
+   more) of:
+   - A documented, copy-pasteable `-target` invocation pattern in the
+     README (correct quoting example, per shell).
+   - A `terraform plan` review step made mandatory before `apply` for
+     any targeted operation (i.e. never `apply -target` directly —
+     always plan-review-apply as separate steps).
+   - Possibly restructuring `k3s_nodes` so a single-node operation is
+     less prone to unintended graph-wide evaluation — worth revisiting
+     once the actual cause is known, not before.
+5. **Never repeat an untested `-target` apply against the live cluster**
+   until steps 1-4 are done. Losing all three nodes once was recoverable
+   because etcd snapshots existed; that's not a reason to treat it as
+   low-risk going forward.
+---
+ 
+## Incident B — Manual etcd Restore From S3/MinIO Snapshot (Unplanned DR
+Drill)
+ 
+### Context
+Following Incident A, all three K3s node VMs needed to be rebuilt and the
+cluster restored from the most recent etcd snapshot. This was not a
+planned drill — it was the direct consequence of Incident A — but it
+ended up being the most complete real-world validation of the DR story
+performed so far: VM provisioning through to a working, restored cluster.
+ 
+### What happened, in order (best-effort reconstruction)
+ 
+**1. Restored the first node from an S3-backed etcd snapshot, using k3s's
+own restore flags directly (not via Ansible):**
+ 
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.31.5+k3s1" sh -s - server \
+  --cluster-reset \
+  --cluster-reset-restore-path='etcd-snapshot-k3s-pve4-1785823205' \
+  --token '<vault_k3s_cluster_token>' \
+  --flannel-backend=none \
+  --disable traefik \
+  --tls-san 10.0.20.20 \
+  --etcd-s3 \
+  --etcd-s3-endpoint=10.0.10.15:9000 \
+  --etcd-s3-bucket=k3s-etcd-snapshots \
+  --etcd-s3-access-key='<MINIO_ROOT_USER>' \
+  --etcd-s3-secret-key='<MINIO_ROOT_PASSWORD>' \
+  --etcd-s3-insecure=true
+```
+ 
+Repeated the equivalent join/rejoin process on the second and third
+nodes.
+ 
+**2. Hit friction the restore itself doesn't fix:** an etcd snapshot
+restores Kubernetes *object* state (Deployments, PVCs, PV definitions,
+Secrets, etc.) — it does **not** restore node-level OS packages,
+`kubelet`/`k3s` runtime config, or clear stale storage-driver locks left
+behind by the previous node identity. Concretely:
+   - `nfs-common` wasn't present on the freshly-imaged nodes, so
+     NFS-backed mounts (Photoprism's originals PV) failed.
+   - Ceph RBD volumes threw `"is still being used"` lock errors — the
+     Ceph CSI driver/backend still held attachment state referencing the
+     *previous* node identities the PVs had been attached to before the
+     rebuild.
+**3. Ran the existing `k3s_cluster` Ansible role against the rebuilt
+nodes.** This resolved a real subset of the friction (package
+installation, baseline config) but **not all of it** — confirming the
+role currently assumes either a) a genuinely fresh `--cluster-init`, or
+b) a clean rejoin to a still-healthy VIP. It has **no path that
+represents "this node was restored from an etcd snapshot and needs
+post-restore cleanup."**
+ 
+**4. Manual cleanup still required after the Ansible run:**
+   - Removed invalid/stale TLS certificates and auto-generated configs
+     left over from the pre-restore node identity (exact files not
+     captured — if this happens again, `journalctl -u k3s` at the time
+     of the failing cert handshake, plus `ls -la
+     /var/lib/rancher/k3s/server/tls/`, would be the place to capture
+     specifics for next time).
+   - Restarted `k3s.service` after the manual cleanup for it to take
+     effect cleanly.
+**5. Reconciliation once the host-level blockers were cleared:**
+   - Evicted pods stuck in bad states as a direct result of steps 2-4 —
+     notably Photoprism stuck in `Init` (waiting on the NFS mount that
+     wasn't available yet) and CrowdSec in a crash loop.
+   - Once the underlying host issue (missing package / stale lock) was
+     actually fixed, Kubernetes' own controllers recreated healthy pod
+     instances without further manual pod-level intervention — this part
+     *did* work as GitOps/K8s self-healing is supposed to.
+**6. Verification:**
+   - `kubectl get pods -A` — confirmed all control-plane components,
+     storage plugins (Ceph CSI), CrowdSec, and application workloads
+     reporting healthy/Running.
+   - *(Recommended for next time, not confirmed done this time:)*
+     `kubectl get nodes -o wide` to confirm all three showing
+     `control-plane,etcd,master` roles and `Ready`; `kubectl -n argocd
+     get applications` to confirm ArgoCD picked back up GitOps
+     reconciliation cleanly against the restored state; `ceph -s` to
+     confirm the Ceph cluster itself came back HEALTH_OK independent of
+     K3s.
+### Confirmed gap: the Ansible `k3s_cluster` role does not support
+etcd-snapshot restore
+ 
+Looking at `ansible/roles/k3s_cluster/tasks/bootstrap.yml`, the role
+currently has exactly two paths:
+- **Path A (`cluster_exists == true`):** rejoin an existing, still-live
+  cluster via the VIP.
+- **Path B (`cluster_exists == false`):** fresh `--cluster-init`.
+Neither path issues `--cluster-reset
+--cluster-reset-restore-path=<snapshot>`. This means: **the one time you
+actually needed a restore-from-backup path, the automation didn't have
+one, and the entire recovery fell back to manual `curl | sh` plus manual
+cleanup.** This is the single most actionable finding from this whole
+incident — the DR story was previously "we have etcd snapshots," and
+this drill proved that's necessary but not sufficient without a
+restore-aware automation path.
+ 
+### Recommended next step (not yet built)
+Add a third path to `bootstrap.yml` — something like a
+`k3s_restore_from_snapshot` variable (default `false`) that, when set,
+runs the `--cluster-reset --cluster-reset-restore-path=<snapshot>`
+variant instead of Path A/B, and folds in the manual cleanup steps
+identified above (ensure `nfs-common` present *before* the restore
+attempt runs, not after; document/automate the stale Ceph RBD lock
+clearance; handle stale TLS cert regeneration). This should be scoped as
+its own small piece of work, not bolted on hastily — the value of this
+incident is that it surfaced the gap under real conditions rather than
+guesswork.
+ 
+---
+ 
+## Key Learnings (additions to the existing "Enseignements Clés" /
+"Key Learnings" list)
+ 
+5. **`-target` is a break-glass tool, not a safe scoping mechanism.**
+   Terraform's dependency graph, not the target string, decides blast
+   radius — an apply can still touch resources you didn't expect it to,
+   especially under state drift or shell-quoting mistakes. Always
+   `plan`, review, *then* `apply` as separate steps for any targeted
+   change; never trust `-target` blind on production infrastructure
+   without having reproduced the exact invocation in a scratch
+   environment first.
+2. **An etcd snapshot restores Kubernetes object state, not node
+   state.** Packages, runtime config, and storage-driver-held locks
+   referencing the old node identity all survive a rebuild and will
+   actively block workloads from coming back healthy, even once the
+   Kubernetes objects themselves are correctly restored. Any
+   restore-from-backup automation path needs to account for this
+   explicitly, not just the `k3s --cluster-reset-restore-path` step
+   itself.
+3. **Etcd snapshots being confirmed-working (2026-08-01) and a full
+   restore actually succeeding under real (if unplanned) conditions are
+   two different levels of proof.** The first confirms the backup
+   mechanism runs; the second confirms the backup is actually usable
+   under pressure. This incident supplied the second, and it's worth
+   more evidence-wise than the original verification, even though it
+   happened unplanned and partially undocumented.
+ 
+* **[← Back to Home](/index.html)**
