@@ -91,5 +91,272 @@ Au-delà des corrections de bugs bloquants, des refactorisations ont été mené
 
 ---
 
+# Addendum — Reconstruction Complète du Cluster & Exercice de Reprise après Sinistre etcd
+ 
+**Note de statut (pour toi, pas pour publication telle quelle) :** la
+section sur la restauration etcd ci-dessous est une reconstruction a
+posteriori faite au mieux, pas un journal de commandes vérifié. Considère
+les flags/l'ordre exact comme « probablement corrects », pas « certainement
+corrects » — si tu reconstitues un jour la chronologie plus précisément
+(historique shell, horodatages `journalctl`), affine ce texte avant qu'il
+ne devienne définitivement public. J'ai signalé les points fragiles au fil
+du texte.
+ 
+---
+ 
+## Incident A — `terraform apply -target` a détruit l'intégralité du parc
+K3s au lieu d'un seul nœud
+ 
+### Symptôme
+Un `terraform apply` ciblé avec `-target` sur un seul nœud K3s a abouti à
+la destruction et à la recréation par Terraform de **l'ensemble des trois**
+VMs de nœuds K3s (`k3s-pve2`, `k3s-pve3`, `k3s-pve4`), et non du seul nœud
+ciblé.
+ 
+### Ce qui est réellement établi
+- L'intention était de cibler une seule instance
+  `module.k3s_node["<clé>"]`.
+- Le résultat a été une destruction/recréation complète sur l'ensemble
+  `for_each` `k3s_nodes`.
+- La commande exacte exécutée, ainsi que la sortie du plan Terraform
+  affichée avant validation, n'ont pas été capturées — c'est la plus
+  grande lacune pour reconstituer la cause racine avec certitude.
+### Cause racine la plus probable (hypothèse, non confirmée)
+Compte tenu de la structure des modules dans `terraform/main.tf`, deux
+explications candidates correspondent au symptôme, et elles ne
+s'excluent pas mutuellement :
+ 
+1. **Problème d'échappement/de guillemets shell sur l'index `for_each`.**
+   Une valeur `-target` du type `module.k3s_node["pve2"]` contient des
+   caractères (`[`, `]`, `"`) que la plupart des shells dénaturent si
+   elle n'est pas soigneusement mise entre guillemets (ex. :
+   `-target='module.k3s_node["pve2"]'`). Si les guillemets étaient
+   incorrects, le flag peut échouer silencieusement à être interprété
+   comme prévu — certains shells transmettent une chaîne de ciblage
+   malformée, Terraform peut renvoyer une erreur, mais selon la version
+   de Terraform et la façon dont l'erreur a été gérée dans le terminal,
+   il est possible que l'apply se soit poursuivi comme un apply **non
+   ciblé** plutôt que d'échouer proprement.
+2. **`-target` restreint l'*apply*, pas la surface de risque du
+   *plan*.** `-target` est explicitement documenté par HashiCorp comme un
+   outil de dernier recours (« break-glass »), pas un mécanisme de
+   ciblage sûr au quotidien — Terraform évalue toujours le graphe de
+   dépendances complet pour déterminer ce dont la ressource ciblée a
+   besoin. Selon la dérive d'état (*state drift* — par exemple si le
+   checksum/URL partagé de l'image `debian_cloud`, ou le snippet
+   `vendor_data` par nœud, avait changé depuis le dernier apply), un
+   apply `-target` peut malgré tout déclencher le remplacement de
+   ressources dont le nœud ciblé ne « dépend » pas de manière évidente
+   pour un humain, si le graphe de Terraform en décide autrement.
+**Les deux hypothèses sont plausibles avec la structure actuelle du dépôt,
+et aucune ne peut être écartée sans la sortie réelle du plan de cette
+exécution** — c'est précisément pourquoi une reproduction sécurisée est
+nécessaire, et non une supposition traitée comme un fait acquis.
+ 
+### Pourquoi cela dépasse l'incident immédiat
+Il ne s'agit pas simplement « d'une mauvaise commande » — cela signifie
+qu'**on ne peut actuellement pas faire confiance à `-target` comme
+mécanisme de ciblage sûr dans ce dépôt** tant que la cause n'est pas
+confirmée et qu'un garde-fou n'est pas en place. Chaque future opération
+« corriger juste ce nœud-là » risque de reproduire cet incident tant que
+ce point n'est pas résolu.
+ 
+### Actions correctives entreprises
+- Aucune n'a encore été appliquée au code Terraform lui-même — cet
+  addendum constitue la première étape (documenter avant de corriger,
+  afin que le correctif vise une cause confirmée, pas une supposition).
+### Tests planifiés (à effectuer avant le prochain apply `-target` en
+production)
+1. **Monter un environnement de test jetable** — une seule VM Proxmox à
+   faible enjeu (ou même une seconde paire fichier `.tfvars`/state
+   dédiée, pointant vers un bucket MinIO de test) reproduisant la forme
+   `for_each` de `k3s_nodes` avec 2-3 instances factices. Peu coûteux à
+   détruire, rien n'en dépend.
+2. **Reproduire l'invocation `-target` exacte** supposée utilisée, avec
+   des guillemets corrects, et inspecter la **sortie du plan**
+   (`terraform plan -target=... -out=tfplan`, puis `terraform show
+   tfplan`) avant d'exécuter `apply`. Vérifier si le plan lui-même
+   annonce ne toucher que l'instance ciblée.
+3. **Tester délibérément le mauvais échappement suspecté** dans le même
+   environnement de test, pour voir s'il reproduit la destruction
+   complète du parc ou s'il échoue proprement à la place. C'est le seul
+   moyen de transformer l'hypothèse ci-dessus en cause confirmée.
+4. **Une fois la cause racine confirmée**, le correctif relèvera
+   probablement d'un (ou plusieurs) des éléments suivants :
+   - Un motif d'invocation `-target` documenté et prêt à copier-coller
+     dans le README (exemple de guillemets corrects, par shell).
+   - Une étape de revue `terraform plan` rendue obligatoire avant tout
+     `apply` pour une opération ciblée (c'est-à-dire ne jamais faire
+     `apply -target` directement — toujours plan-revue-apply en étapes
+     séparées).
+   - Éventuellement restructurer `k3s_nodes` pour qu'une opération sur un
+     seul nœud soit moins sujette à une évaluation involontaire de
+     l'ensemble du graphe — à revoir une fois la cause réelle connue, pas
+     avant.
+5. **Ne plus jamais répéter un apply `-target` non testé** contre le
+   cluster en production tant que les étapes 1 à 4 ne sont pas
+   effectuées. Avoir perdu les trois nœuds une fois était récupérable
+   grâce aux snapshots etcd existants ; ce n'est pas une raison pour
+   traiter cela comme un risque mineur à l'avenir.
+---
+ 
+## Incident B — Restauration Manuelle d'etcd depuis un Snapshot S3/MinIO
+(Exercice de Reprise après Sinistre Non Planifié)
+ 
+### Contexte
+À la suite de l'Incident A, les trois VMs de nœuds K3s ont dû être
+reconstruites et le cluster restauré depuis le snapshot etcd le plus
+récent. Il ne s'agissait pas d'un exercice planifié — c'était la
+conséquence directe de l'Incident A — mais cela s'est avéré être la
+validation la plus complète, à ce jour, du scénario de reprise après
+sinistre : du provisionnement des VMs jusqu'à un cluster restauré et
+fonctionnel.
+ 
+### Déroulement (reconstruction faite au mieux)
+ 
+**1. Restauration du premier nœud depuis un snapshot etcd hébergé sur S3,
+en utilisant directement les flags de restauration natifs de k3s (pas via
+Ansible) :**
+ 
+```bash
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.31.5+k3s1" sh -s - server \
+  --cluster-reset \
+  --cluster-reset-restore-path='etcd-snapshot-k3s-pve4-1785823205' \
+  --token '<vault_k3s_cluster_token>' \
+  --flannel-backend=none \
+  --disable traefik \
+  --tls-san 10.0.20.20 \
+  --etcd-s3 \
+  --etcd-s3-endpoint=10.0.10.15:9000 \
+  --etcd-s3-bucket=k3s-etcd-snapshots \
+  --etcd-s3-access-key='<MINIO_ROOT_USER>' \
+  --etcd-s3-secret-key='<MINIO_ROOT_PASSWORD>' \
+  --etcd-s3-insecure=true
+```
+ 
+Le même processus de rejointure/join a été répété sur les deuxième et
+troisième nœuds.
+ 
+**2. Friction rencontrée que la restauration seule ne résout pas :** un
+snapshot etcd restaure l'état des *objets* Kubernetes (Deployments, PVCs,
+définitions de PV, Secrets, etc.) — il ne restaure **pas** les paquets
+système au niveau du nœud, la configuration runtime `kubelet`/`k3s`, ni
+ne nettoie les verrous de pilotes de stockage laissés par l'ancienne
+identité du nœud. Concrètement :
+   - `nfs-common` n'était pas présent sur les nœuds fraîchement
+     réimagés, donc les montages NFS (le PV des originaux de Photoprism)
+     ont échoué.
+   - Les volumes Ceph RBD renvoyaient des erreurs de verrou (« *is still
+     being used* ») — le pilote/backend CSI Ceph conservait encore un
+     état d'attachement référençant les *anciennes* identités de nœuds
+     auxquelles les PV avaient été attachés avant la reconstruction.
+**3. Exécution du rôle Ansible `k3s_cluster` existant sur les nœuds
+reconstruits.** Cela a résolu une partie réelle de la friction
+(installation de paquets, configuration de base) mais **pas la
+totalité** — confirmant que le rôle suppose actuellement soit a) une
+véritable initialisation fraîche via `--cluster-init`, soit b) une
+rejointure propre à un VIP toujours sain. Il **n'existe aucun chemin
+représentant « ce nœud a été restauré depuis un snapshot etcd et
+nécessite un nettoyage post-restauration ».**
+ 
+**4. Nettoyage manuel encore nécessaire après l'exécution Ansible :**
+   - Suppression de certificats TLS invalides/obsolètes et de
+     configurations auto-générées héritées de l'identité de nœud
+     précédente (fichiers exacts non capturés — si cela se reproduit,
+     `journalctl -u k3s` au moment de l'échec de la négociation TLS,
+     ainsi que `ls -la /var/lib/rancher/k3s/server/tls/`, seraient les
+     bons endroits pour capturer les détails précis la prochaine fois).
+   - Redémarrage de `k3s.service` après le nettoyage manuel pour que les
+     changements prennent effet proprement.
+**5. Réconciliation une fois les blocages au niveau hôte levés :**
+   - Éviction des pods bloqués dans un état dégradé en conséquence
+     directe des étapes 2 à 4 — notamment Photoprism bloqué en état
+     `Init` (en attente du montage NFS pas encore disponible) et
+     CrowdSec en boucle de crash.
+   - Une fois le problème sous-jacent au niveau hôte réellement corrigé
+     (paquet manquant / verrou obsolète), les contrôleurs Kubernetes ont
+     eux-mêmes recréé des instances de pods saines sans intervention
+     manuelle supplémentaire au niveau des pods — cette partie a
+     effectivement fonctionné comme l'auto-guérison GitOps/K8s est censée
+     le faire.
+**6. Vérification :**
+   - `kubectl get pods -A` — confirmation que l'ensemble des composants
+     du plan de contrôle, des plugins de stockage (Ceph CSI), de
+     CrowdSec, et des charges de travail applicatives étaient sains/en
+     état `Running`.
+   - *(Recommandé pour la prochaine fois, non confirmé pour celle-ci :)*
+     `kubectl get nodes -o wide` pour confirmer que les trois nœuds
+     affichent bien les rôles `control-plane,etcd,master` et l'état
+     `Ready` ; `kubectl -n argocd get applications` pour confirmer
+     qu'ArgoCD a repris proprement la réconciliation GitOps contre l'état
+     restauré ; `ceph -s` pour confirmer que le cluster Ceph lui-même est
+     bien revenu à `HEALTH_OK` indépendamment de K3s.
+### Lacune confirmée : le rôle Ansible `k3s_cluster` ne prend pas en
+charge la restauration depuis un snapshot etcd
+ 
+En examinant `ansible/roles/k3s_cluster/tasks/bootstrap.yml`, le rôle
+dispose actuellement d'exactement deux chemins :
+- **Chemin A (`cluster_exists == true`) :** rejoindre un cluster existant
+  et toujours actif via le VIP.
+- **Chemin B (`cluster_exists == false`) :** initialisation fraîche via
+  `--cluster-init`.
+Aucun des deux chemins n'exécute `--cluster-reset
+--cluster-reset-restore-path=<snapshot>`. Cela signifie que **la seule
+fois où une restauration depuis une sauvegarde était réellement
+nécessaire, l'automatisation n'en disposait pas, et l'intégralité de la
+récupération est retombée sur un `curl | sh` manuel suivi d'un nettoyage
+manuel.** C'est le constat le plus exploitable de tout cet incident — le
+discours de reprise après sinistre était jusqu'ici « nous avons des
+snapshots etcd », et cet exercice a prouvé que c'est nécessaire mais pas
+suffisant sans un chemin d'automatisation conscient de la restauration.
+ 
+### Prochaine étape recommandée (pas encore construite)
+Ajouter un troisième chemin à `bootstrap.yml` — par exemple une variable
+`k3s_restore_from_snapshot` (par défaut `false`) qui, lorsqu'elle est
+activée, exécute la variante `--cluster-reset
+--cluster-reset-restore-path=<snapshot>` au lieu du Chemin A/B, et intègre
+les étapes de nettoyage manuel identifiées ci-dessus (s'assurer que
+`nfs-common` est présent *avant* la tentative de restauration, pas après ;
+documenter/automatiser la levée des verrous Ceph RBD obsolètes ; gérer la
+régénération des certificats TLS obsolètes). Ce point devrait être cadré
+comme un chantier à part entière, pas ajouté à la hâte — la valeur de cet
+incident tient au fait qu'il a révélé la lacune en conditions réelles
+plutôt que par supposition.
+ 
+---
+ 
+## Enseignements Clés (ajouts à la liste existante « Enseignements Clés
+pour les Projets Futurs »)
+ 
+5. **`-target` est un outil de dernier recours, pas un mécanisme de
+   ciblage sûr.** C'est le graphe de dépendances de Terraform, et non la
+   chaîne de ciblage, qui détermine le rayon d'impact — un apply peut
+   toucher des ressources inattendues, en particulier en cas de dérive
+   d'état ou d'erreur de guillemets shell. Toujours faire `plan`, revoir,
+   *puis* `apply` en étapes séparées pour toute modification ciblée ;
+   ne jamais faire confiance aveuglément à `-target` sur une
+   infrastructure de production sans avoir d'abord reproduit l'invocation
+   exacte dans un environnement de test.
+2. **Un snapshot etcd restaure l'état des objets Kubernetes, pas l'état
+   du nœud.** Les paquets, la configuration runtime, et les verrous
+   détenus par les pilotes de stockage référençant l'ancienne identité du
+   nœud survivent tous à une reconstruction et bloqueront activement le
+   retour à un état sain des charges de travail, même une fois les objets
+   Kubernetes eux-mêmes correctement restaurés. Tout chemin
+   d'automatisation de restauration doit prendre cela en compte
+   explicitement, pas seulement l'étape `k3s
+   --cluster-reset-restore-path` elle-même.
+3. **Confirmer que les snapshots etcd fonctionnent (2026-08-01) et
+   réussir une restauration complète en conditions réelles sont deux
+   niveaux de preuve différents.** Le premier confirme que le mécanisme
+   de sauvegarde s'exécute ; le second confirme que la sauvegarde est
+   réellement utilisable sous pression. Cet incident a fourni le second,
+   et il vaut davantage sur le plan de la preuve que la vérification
+   initiale, même s'il s'est produit de manière non planifiée et
+   partiellement non documentée.
+
+---
+
+
 * **[← Retour à l'Accueil](/index.html)**
 ---
