@@ -4,55 +4,81 @@ title: Accueil
 nav_order: 1
 ---
 
-## 🚀 Mon Parcours : De la Restauration à l'Ingénierie Système
+## Mon parcours : de la restauration à l’administration système
 
-Après 20 ans d'expérience terrain dans la restauration et la plomberie, j'ai opéré une reconversion professionnelle vers l'informatique. Actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux) à l'IDEM Le Soler**, j'utilise mon homelab comme un environnement de staging rigoureux et de niveau production pour valider mes compétences techniques par des implémentations concrètes.
+Après une vingtaine d’années dans la restauration puis la plomberie, j’ai engagé une reconversion vers les systèmes et réseaux.  
+Je suis actuellement en formation **TSSR (Technicien Supérieur Systèmes et Réseaux)** à L’IDEM Le Soler (fin prévue janvier 2027).
 
-### 📈 L'Évolution de mon Homelab (L'école de la contrainte matérielle)
-
-Mon architecture actuelle à 5 machines n'est pas née du jour au lendemain. Elle a évolué étape par étape, au fil des résolutions de pannes, de l'évolution des besoins et de la mise à l'échelle du matériel :
-
-* **An 1 (Le Déclic) :** Récupération d'un vieux PC portable. Début des expérimentations avec la CLI Linux et le dual-boot. C'est là que j'ai découvert le contrôle total du système et que ma passion pour l'IT est née.
-* **An 2 (Le Premier Défi en Production) :** Déploiement d'un site WordPress auto-hébergé pour l'entreprise de ma femme sur le free tier de Google Cloud Platform (GCP). Ma première expérience de gestion d'instances Linux distantes.
-* **An 4 (Le Passage au Local) :** Achat d'un mini-PC pour héberger le site de ma femme localement sous **Proxmox VE**. Mise en place d'un **Tunnel Cloudflare** pour les flux entrants, isolation des charges de travail dans des LXC, et déploiement d'une stack de monitoring basique et de Vaultwarden.
-* **An 5 (Le Virage de l'Automatisation) :** Ajout d'une deuxième machine physique sous Docker bare-metal. Migration du point d'entrée, du monitoring, et intégration de Traefik pour le routage interne aux côtés d'applications comme Seafile, Jellyfin et Immich. **Étape majeure :** Reconstruction complète du lab à partir de zéro via **Terraform et Ansible** (IaC).
-* **An 5.5 (La Segmentation Réseau) :** Intégration d'un switch administrable et d'une appliance virtuelle **VyOS** pour implémenter un routage inter-VLAN et une isolation stricts.
-* **An 6 (Consolidation & Construction du Cluster) :** Récupération d'un ordinateur portable supplémentaire et d'un ancien PC fixe. Pour optimiser l'utilisation de mes ressources matérielles, j'ai abandonné VyOS au profit d'un pare-feu **OPNsense** virtualisé dans Proxmox. Cela m'a permis de scinder mon environnement entre un backbone de gestion hautement résilient et un cluster de calcul en haute disponibilité.
+Mon homelab me sert de terrain d’entraînement quotidien. J’y pratique l’Infrastructure as Code, la virtualisation, Kubernetes et la sécurisation d’infrastructures sous contraintes matérielles réelles.
 
 ---
 
-## 🧠 Philosophie d'Ingénierie & Méthode d'Apprentissage
+## Évolution du homelab
 
-> "Concevoir une infrastructure de base solide comme un roc avant de construire un cluster par-dessus."
+L’architecture actuelle n’est pas née d’un coup. Elle s’est construite progressivement :
 
-* **GitOps & Automatisation Totale :** J'applique une règle stricte : "aucune modification manuelle". Du provisionnement des VMs de l'hyperviseur à la déclaration des règles de pare-feu, tout est poussé sur Git et exécuté via le code.
-* **Isolation Défensive et Pragmatique du Control Plane :** Un cluster n'est stable que si l'infrastructure qui le soutient l'est aussi. J'ai délibérément isolé mon routage réseau cœur (OPNsense), mes sauvegardes (PBS) et mes moteurs d'automatisation sur une machine dédiée, totalement en dehors du cluster. Cela me protège du problème de "l'œuf et la poule", où une panne de cluster ferait s'effondrer mes outils de déploiement ou mes accès réseau principaux.
-* **Posture face à l'IA Générative :** J'utilise activement l'IA comme un partenaire de *pair-programming* pour accélérer l'écriture des syntaxes de configuration répétitives (YAML, HCL). Cependant, je pratique l'**ingénierie inverse** sur chaque bloc : je ne déploie jamais de configurations automatisées sans être capable de dépanner, sécuriser et expliquer manuellement les mécanismes système sous-jacents (paramètres du noyau Linux, tables de routage CNI).
-
----
-
-## 🛠️ Architecture de Production Actuelle - 5 Nœuds (En développement actif)
-
-Mon environnement est divisé en une couche de calcul de production qui s'exécute directement au-dessus d'un backbone de gestion hautement résilient :
-
-### 1. Le Cœur de l'Infrastructure (2 Nœuds Indépendants)
-* **Nœud Cœur Infra (pve1) :** Délibérément maintenu hors du cluster de calcul principal. Il héberge un pare-feu virtualisé **OPNsense** (point d'entrée de routage de tout le réseau), une instance **Proxmox Backup Server (PBS)**, et mon **nœud de contrôle d'automatisation** qui provisionne et configure l'environnement.
-* **Serveur de Stockage (NAS Bare-Metal) :** Un PC fixe dédié faisant office de NAS haute capacité, équipé d'un **pool ZFS RAID-Z2 de 6 disques (6 x 1 To)**. Cette configuration offre une tolérance de panne de 2 disques pour 4 To de stockage utile hautement protégé.
-
-### 2. La Couche de Calcul (Cluster Hyperconvergé à 3 Nœuds)
-* **Cluster Proxmox VE + Ceph :** Composé de 3 nœuds hyperviseurs physiques exécutant un **pool de stockage distribué Ceph** pour les composants stateful. Cette stack soutient deux sites WordPress en production : `petitsanglais`, un petit site que j'ai construit et que je maintiens moi-même, et `hantaweb`, une boutique e-commerce WooCommerce complète que j'héberge et administre au niveau de l'infrastructure (la conception et le développement applicatif étant gérés par le propriétaire du site).
-* **Microservices Conteneurisés :** Un cluster **Kubernetes K3s à 3 nœuds** avec Etcd embarqué, actuellement en cours de finalisation. Je valide actuellement le bootstrapping des nœuds du control-plane en HA et les comportements d'auto-guérison (*self-healing*) avant d'y migrer mes applications stateless et mes plateformes internes.
-
-### 3. Architecture Réseau & Sécurité
-* **Point d'Entrée Zero-Trust :** Les connexions entrantes sont gérées via des Tunnels Cloudflare, sans aucun port ouvert sur l'extérieur.
-* **Micro-Segmentation :** Le trafic est strictement segmenté en VLANs dédiés (Management, DMZ, Production Interne). Au sein du cluster Kubernetes, les politiques réseau de **Calico CNI** imposent une isolation stricte des pods, tandis qu'un contrôleur d'ingress **Traefik v3** route le trafic à travers des bouncers **CrowdSec** locaux pour une protection HTTP à la couche 7.
+- **Année 1** — Premier contact avec Linux sur un vieux PC portable (dual-boot, CLI).
+- **Année 2** — Premier site WordPress auto-hébergé sur le free tier de Google Cloud Platform.
+- **Année 4** — Passage au local : mini-PC sous Proxmox, tunnel Cloudflare, premiers conteneurs et monitoring basique.
+- **Année 5** — Ajout d’une deuxième machine, Traefik, services internes (Seafile, Jellyfin…). Reconstruction complète de l’infrastructure via **Terraform + Ansible**.
+- **Année 5.5** — Segmentation réseau (switch administrable, VLANs).
+- **Année 6** — Consolidation : cluster Proxmox + Ceph à 3 nœuds, NAS dédié en ZFS, démarrage du cluster K3s en haute disponibilité.
 
 ---
 
-## 🎯 Statut du Déploiement & Méthodologie
+## Architecture actuelle (résumé)
 
-L'architecture présentée sur ce site représente l'**état final cible désiré**. Chaque étape du déploiement a été entièrement pensée, mûrie et planifiée en amont avant l'écriture du moindre bloc de code. L'état réel et actuel de la configuration de mon homelab est directement traçable dans mon [dépôt Git infra-homelab](https://github.com/richpea1982/infra-homelab). Cette approche rigoureuse standardise l'ensemble de mon documentation ; cette précision méthodologique s'applique par défaut à toutes les sections suivantes.
+L’environnement est divisé en deux plans clairement séparés :
+
+**1. Plan de gestion (hors cluster de calcul)**  
+- **pve1** : OPNsense (pare-feu / routage), Proxmox Backup Server, nœud d’automatisation (Semaphore + Ansible).  
+- **NAS bare-metal** : Debian + ZFS RAID-Z2 (6 × 1 To) + MinIO (stockage objet S3).
+
+**2. Plan de calcul (cluster Proxmox + Ceph)**  
+- **pve2, pve3, pve4** : hyperviseurs Proxmox en cluster avec stockage Ceph.  
+- Hébergent les VMs WordPress publiques, les nœuds K3s et les LXC média.
+
+**Réseau**  
+- Segmentation en VLANs (management, interne, média, DMZ, untrusted).  
+- Exposition publique uniquement via **Cloudflare Tunnels** (aucun port ouvert en entrée).  
+- Accès d’administration via overlay WireGuard / Tailscale.
+
+**Kubernetes**  
+- Cluster K3s à 3 nœuds (etcd embarqué + kube-vip).  
+- Bootstrap et configuration de base gérés par Ansible.  
+- Déploiements applicatifs gérés ensuite en GitOps via ArgoCD.
+
+Le détail des nœuds, adresses IP, ressources et choix techniques se trouve dans le dépôt [infra-homelab](https://github.com/richpea1982/infra-homelab) (README = source de vérité).
 
 ---
 
-**[Suivant : Vue d'ensemble de l'infrastructure →](/infrastructure.html)**
+## Statut actuel (août 2026)
+
+| Composant                        | État                                      |
+|----------------------------------|-------------------------------------------|
+| Proxmox + Ceph + réseau + NAS    | En production quotidienne                 |
+| VMs WordPress publiques          | En production                             |
+| Automatisation (Terraform/Ansible/Semaphore) | Opérationnelle                     |
+| Cluster K3s                      | Bootstrappé, validation HA et GitOps en cours |
+| Migration des services stateless | Progressive                               |
+
+L’architecture décrite ici et dans le dépôt Git correspond à l’état cible et au code actuel. Certaines parties (notamment la finalisation du GitOps et le déplacement de tous les services dans K3s) sont encore en cours de consolidation.
+
+---
+
+## Méthode de travail
+
+- Tout est versionné dans Git. Les modifications manuelles sont évitées.
+- Le plan de gestion (pare-feu, sauvegardes, automatisation) est isolé du plan de calcul pour éviter les dépendances circulaires.
+- Les choix techniques sont guidés par les contraintes réelles du matériel (latence disque, RAM limitée, vieux CPU).
+- J’utilise l’IA comme aide à la rédaction de code répétitif, mais je valide et comprends chaque bloc avant de le déployer.
+
+---
+
+**Pages suivantes :**
+
+- [Vue d’ensemble de l’infrastructure →](/infrastructure.html)
+- [IaC et automatisation →](/iac-automation.html)
+- [Réseau et sécurité →](/networking.html) / [Sécurité →](/security.html)
+- [Services →](/services.html)
+- [Rétrospective et leçons apprises →](/lessons-learned.html)

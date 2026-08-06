@@ -1,121 +1,99 @@
 ---
 layout: default
-title: IaC & Automatisation
+title: IaC et automatisation
 nav_order: 3
 ---
 
-# IaC & Automatisation de l'Infrastructure
+# IaC et automatisation
 
-Cette page décrit la chaîne de déploiement automatisée de l'infrastructure. L'intégralité du cycle de vie des ressources (du provisionnement matériel au déploiement des applications) est gérée de manière déclarative à travers deux dépôts Git distincts : `infra-homelab` (l'infrastructure de base) et `k3s` (les ressources applicatives). Toute l'exécution de ce workflow est orchestrée de manière centralisée via notre plateforme de CI/CD.
+Toute l’infrastructure est gérée de manière déclarative.  
+Deux dépôts Git séparent clairement les responsabilités.
 
----
+| Dépôt | Rôle |
+|-------|------|
+| [infra-homelab](https://github.com/richpea1982/infra-homelab) | Provisioning des VMs/LXCs (Terraform) + configuration OS et bootstrap K3s (Ansible) |
+| [k3s](https://github.com/richpea1982/k3s) | Manifests applicatifs et charts Helm gérés en GitOps par ArgoCD |
 
-## 🏗️ Architecture des Dépôts Git (Séparation des Responsabilités)
-
-Pour garantir une sécurité et une maintenance optimales, la configuration est séparée en deux frontières étanches :
-
-```mermaid
-graph TD
-    subgraph Repos [Gestion des Sources]
-        A[Dépôt: infra-homelab]
-        B[Dépôt: k3s]
-    end
-
-    subgraph Provision [Couche Core]
-        C[Pipeline CI/CD : Terraform + Ansible via Semaphore]
-    end
-
-    subgraph K3sCluster [Orchestrateur]
-        D[Bootstrap ArgoCD]
-        E[Gestion des Manifestes & Pods]
-    end
-
-    A -->|1. Déploiement| C
-    C -->|2. Initialisation| D
-    B -->|3. Synchronisation SSH Deploy Key| E
-    D -.->|Pilote| E
-```
-
-1. **`infra-homelab`** : Contient le code Terraform (fournisseur bpg/proxmox) pour déclarer les VMs/LXCs et les playbooks Ansible de configuration OS de base. C'est ici qu'est bootstrappé ArgoCD.
-2. **`k3s`** : Dépôt applicatif géré exclusivement en GitOps par ArgoCD. Il contient les CRDs, les charts Helm (Traefik, Calico, Prometheus) et les manifests applicatifs selon le pattern "App of Apps".
+Le README du dépôt `infra-homelab` est la source de vérité.
 
 ---
 
-## 🛠️ Le Workflow de Provisioning en 3 Couches
+## Chaîne de déploiement
 
-### 1. Provisioning Infrastructure (Terraform)
-Le module Terraform s'interface avec l'API Proxmox VE pour créer les machines virtuelles à partir de templates Cloud-Init (Debian 12). L'agent QEMU (`qemu-guest-agent`) est directement activé et injecté à cette étape afin de permettre à Terraform de découvrir dynamiquement les adresses IP de l'infrastructure via ses *outputs*. Les clés SSH publiques des administrateurs et la configuration réseau initiale (VLAN, IPs statiques) sont injectées automatiquement lors de la création de la ressource.
+Le workflow se déroule en trois couches :
 
-### 2. Configuration OS & Sécurité (Ansible)
-Une fois les VMs en ligne et leurs adresses IP résolues par Terraform, Ansible prend le relais pour appliquer les configurations de base :
-* Mise à jour du système et installation des paquets indispensables (`curl`, `sudo`).
-* Durcissement de la configuration SSH (désactivation de l'authentification par mot de passe, changement de port par défaut).
-* Configuration des points de montage disques locaux (`local-lvm`) pour accueillir l'environnement d'exécution du cluster.
+**1. Provisioning (Terraform)**  
+- Crée les VMs et LXC sur Proxmox (module `bpg/proxmox`).  
+- Injecte les clés SSH, la configuration réseau (VLAN + IP statique) et active qemu-guest-agent.  
+- State stocké sur MinIO (NAS).
 
-### 3. Orchestration Applicative & Moteur GitOps (ArgoCD)
-La gestion du cycle de vie des applications n'utilise **aucun outil local ou contrôleur Helm interne décentralisé**. À la place, une mécanique GitOps centralisée via **ArgoCD** pilote l'ensemble du cluster K3s. 
+**2. Configuration et bootstrap (Ansible)**  
+- Durcissement OS, paquets de base, configuration SSH.  
+- Déploiement du cluster K3s (3 nœuds, etcd embarqué, kube-vip).  
+- Installation d’ArgoCD + injection de la deploy key SSH vers le dépôt `k3s`.  
+- Configuration du NAS (ZFS, NFS, MinIO) et des rôles annexes (smartctl exporter, alert router…).
 
-Ansible installe ArgoCD immédiatement après le déploiement du cluster et injecte une clé de déploiement SSH générée à la volée. ArgoCD utilise cette clé pour s'authentifier de manière sécurisée auprès du dépôt privé `k3s`, synchronisant automatiquement l'état désiré des microservices (Calico CNI, Traefik, monitoring, applications).
+**3. GitOps (ArgoCD)**  
+- Une fois le cluster et ArgoCD en place, Ansible n’intervient plus sur les applications.  
+- ArgoCD synchronise en continu les manifests du dépôt `k3s` (Traefik, CrowdSec, monitoring, Cloudflare Tunnel, portfolio, Vaultwarden, Velero, etc.).
 
 ---
 
-## 📝 Procédure de Déploiement (Pipeline CI/CD & Bootstrap)
+## Orchestration : Semaphore
 
-Afin d'assurer un pipeline CI/CD complet et standardisé, l'exécution des plans Terraform et des playbooks Ansible est entièrement prise en charge de manière automatisée par notre instance **Ansible Semaphore**. 
+L’exécution des plans Terraform et des playbooks Ansible est centralisée sur le **nœud d’automatisation** (pve1) via **Semaphore**.
 
-Pour recréer manuellement l'infrastructure cible complète à partir de zéro, la suite de commandes suivante détaille la logique séquentielle exécutée en arrière-plan par le runner d'automatisation :
+- Semaphore est installé sur ce nœud.
+- Il lance les jobs Terraform et Ansible.
+- Les clés et secrets nécessaires **avant** l’accès au vault Ansible (clés SSH, credentials Proxmox, etc.) sont stockés et gérés dans Semaphore.
+- Une fois le vault accessible, les secrets sensibles restants sont lus depuis `ansible/group_vars/all/vault.yml` (Ansible Vault).
+
+Cette séparation permet de démarrer l’automatisation sans dépendre d’un vault déjà déchiffré.
+
+---
+
+## Séquence de bootstrap (résumé)
 
 ```bash
-# Étape 1 : Cloner le dépôt d'infrastructure
-git clone https://github.com/richpea1982/infra-homelab.git
-cd infra-homelab/terraform
-
-# Étape 2 : Initialisation et application Terraform
+# 1. Provisioning des machines
+cd terraform
 terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
+terraform plan
+terraform apply
 
-# Étape 3 : Exécution du Playbook Ansible de base (Configuration OS)
+# 2. Configuration du nœud d’automatisation et du NAS
 cd ../ansible
-ansible-playbook -i inventory.ini site.yml --tags "base,security"
+ansible-playbook -i hosts/hosts.ini playbooks/deploy_control_node.yml
+ansible-playbook -i hosts/hosts.ini nas_setup.yml
 
-# Étape 4 : Déploiement du cluster K3s (HA Control Plane via Ansible)
-ansible-playbook -i inventory.ini playbooks/deploy-k3s.yml
+# 3. Bootstrap du cluster K3s + ArgoCD
+ansible-playbook -i hosts/hosts.ini deploy_k3s.yml
 
-# Étape 5 : Bootstrap de la couche GitOps (ArgoCD)
-ansible-playbook -i inventory.ini playbooks/bootstrap-argocd.yml
-```
+Les détails et points d’attention (token de cluster, deploy key, vérifications post-install) sont documentés dans
+ansible/roles/k3s_cluster/K3S-BOOTSTRAP-README.md.
 
-> * Note sur l'étape 4 : Ce playbook initialise le nœud de bootstrap (`2021`), extrait le jeton d'authentification de l'etcd embarqué, puis joint les nœuds `2022` et `2023` pour former le plan de contrôle hautement disponible.
-> * Note sur l'étape 5 : Ce playbook déploie l'opérateur ArgoCD, configure le secret SSH contenant la clé de déploiement privée vers le dépôt `richpea1982/k3s`, et applique l'application racine (Root App). À partir de cet instant, ArgoCD prend le contrôle exclusif du cycle de vie de Kubernetes.
+Haute disponibilité de l’API K3s
 
----
+ÉlémentValeurVIP (kube-vip)10.0.20.20:6443Nœudsk3s-pve2 (10.0.20.21), k3s-pve3 (10.0.20.22), k3s-pve4 (10.0.20.23)
+kube-vip gère une adresse virtuelle flottante en mode ARP.
+Si le nœud leader tombe, la VIP bascule automatiquement sur un autre nœud du control-plane.
 
-## 🎯 Architecture Cible : Redondance de l'accès Cluster via `kube-vip`
+Principes retenus
 
-```mermaid
-graph TD
-    VIP[VIP Virtuelle d'Entrée: 10.0.20.20]
-    
-    subgraph Nodes [Control Plane K3s]
-        N1[k3s-pve2<br>10.0.20.21]
-        N2[k3s-pve3<br>10.0.20.22]
-        N3[k3s-pve4<br>10.0.20.23]
-    end
+Séparation stricte entre infrastructure de base (infra-homelab) et charges applicatives (k3s).
+Ansible pour le bootstrap uniquement ; GitOps pour tout ce qui suit.
+Secrets pré-vault gérés dans Semaphore ; secrets applicatifs dans Ansible Vault.
+Plan de gestion (Semaphore, PBS, OPNsense) isolé du cluster de calcul.
+Aucune modification manuelle durable : tout repasse par Git.
 
-    VIP -->|Gratuitous ARP Elu| N1
-    VIP -.->|Failover Bascule| N2
-    VIP -.->|Failover Bascule| N3
-```
 
-Dans l'état cible de l'infrastructure, l'accès administratif au cluster (via `kubectl`) ainsi que les requêtes internes de routage ne doivent pas dépendre d'une IP physique unique. 
+Statut (août 2026)
 
-* **Objectif Technique** : Implémenter une adresse IP virtuelle flottante (`10.0.20.20`) gérée de manière transparente par `kube-vip`.
-* **Mécanisme** : `kube-vip` sera déployé directement via les manifests d'auto-déploiement de K3s (`/var/lib/rancher/k3s/server/manifests`). Il utilise le mode ARP/Gratuitous ARP pour élire un nœud leader parmi le Control Plane. En cas de perte de l'hôte `k3s-pve2`, la VIP basculera instantanément sur `k3s-pve3` ou `k3s-pve4` sans coupure pour le trafic réseau ou le moteur de déploiement continu d'ArgoCD.
 
----
+ÉtapeÉtatTerraform (VMs / LXC)OpérationnelAnsible (OS + NAS + bootstrap K3s)OpérationnelSemaphore (orchestration)OpérationnelArgoCD + GitOpsEn cours de validation et stabilisationMigration complète des services dans K3sProgressive
 
-* **[Suivant : Réseau →](/networking.html)**
-* **[← Accueil](/index.html)**
+Pages liées :
 
----
+← Vue d’ensemble de l’infrastructure
+Réseau → · Sécurité →
+Services →
