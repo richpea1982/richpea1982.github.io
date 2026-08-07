@@ -6,126 +6,88 @@ nav_order: 5
 
 # Services & Charges de travail
 
-Cette page détaille l'architecture logique des applications, la topologie du cluster Kubernetes (K3s), les mécanismes de routage de couche 7 (Ingress) ainsi que la gestion de la persistance et du stockage des données du homelab.
-
-L'ensemble des déploiements décrits ici est orchestré de manière déclarative via notre dépôt Git, constituant la source unique de vérité.
+Les applications sont réparties selon leur nature (stateful / stateless), leurs besoins en ressources et le type de stockage le plus adapté.
 
 ---
 
-## Architecture des Charges de Travail
+## Hors cluster (Proxmox VMs / LXC)
 
-Le homelab sépare strictement l'exécution des services selon leur état opérationnel (*stateful* vs *stateless*), leurs besoins en ressources et leur adhérence avec le stockage physique :
+### VMs WordPress (VLAN 40 – Ceph)
 
-### 1. Services Hors-Cluster (Proxmox LXC/VM)
-Les applications gourmandes en calcul ou nécessitant un accès de stockage massif non-cloud-native sont isolées en dehors de Kubernetes afin de maximiser les performances :
+| Nom            | Hôte   | VMID | Ressources     | Rôle                          |
+|----------------|--------|------|----------------|-------------------------------|
+| hantaweb       | pve3   | 4011 | 3 vCPU / 4 Go  | E-commerce WooCommerce        |
+| petitsanglais  | pve4   | 4012 | 1 vCPU / 1 Go  | Site vitrine                  |
+| hanta-assos    | pve3   | 4013 | 1 vCPU / 1 Go  | Site association              |
 
-- **`Jellyfin` (LXC 3010, pve2, VLAN 30)** : Serveur multimédia bénéficiant d'un accès direct aux ressources de calcul de `pve2`. Son conteneur est installé sur le stockage local-lvm.
-- **`Photoprism` (LXC 3011, pve2, VLAN 30)** : Base de données et indexation de photos, installée de manière similaire sur `pve2`.
+Stockage sur Ceph pour permettre la migration / redémarrage HA.
 
-- **VMs de Production WordPress (VLAN 40)** : Deux instances critiques s'exécutent en Haute Disponibilité (HA) grâce au stockage distribué Ceph :
-  - **`hantaweb` (VM 4011, pve3 HA)** : Instance e-commerce WooCommerce de production (2 Cœurs CPU, 4 Go RAM).
-  - **`petitsanglais` (VM 4012, pve4 HA)** : Site vitrine de production (1 Cœur CPU, 1 Go RAM).
+### LXC média (VLAN 30 – local-lvm + NFS)
 
-### 2. Services Orchestrés (Cluster K3s)
-Le cluster Kubernetes hautement disponible s'étend sur trois nœuds virtuels dédiés (`k3s-pve2`, `k3s-pve3`, `k3s-pve4`) situés sur le **VLAN 20**.  
-K3s gère sa propre haute disponibilité interne pour l'ensemble des microservices et outils qu'il héberge.
+| Nom      | Hôte | VMID | Notes                                              |
+|----------|------|------|----------------------------------------------------|
+| jellyfin | pve2 | 3010 | Privileged (GPU passthrough), bibliothèque sur NFS |
 
----
-
-## Cartographie des Espaces de Noms K3s (Namespaces)
-
-L'organisation interne du cluster s'articule autour de frontières logiques étanches sécurisées par des politiques réseau strictes (Calico) :
-
-| Service / App | Namespace | Exposé via | Domaine / URL d'accès | Sécurité Réseau (Calico Policy) | Stockage (PV/PVC) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **CF Tunnel** | `networking` | Cloudflare Daemon | `richard.pearsalls.fr` | Autorisé à communiquer uniquement avec le pod Portfolio | Aucun |
-| **Traefik** | `kube-system` | Réseau Local / WG | *Routage Interne* | Contrôle global du routeur d'ingress | Aucun (Apatride) |
-| **Prometheus** | `monitoring` | Ingress Traefik | *Interne uniquement* | Isolé ; sortie uniquement pour la collecte de métriques | `prometheus-pvc` |
-| **Grafana** | `monitoring` | Traefik → WG Local | `grafana.local.lan` | Restreint aux IPs admins authentifiées | `grafana-pvc` |
-| **Dozzle** | `monitoring` | Traefik → WG Local | `logs.local.lan` | Restreint au namespace de monitoring | Aucun |
-| **BenToPDF** | `tools` | Traefik → WG Local | `pdf.local.lan` | Backend isolé | `bento-pvc` |
-| **MD Portfolio** | `web` | CF Tunnel → Traefik | `richard.pearsalls.fr` | Ingress depuis CF autorisé ; egress refusé | `portfolio-assets` |
+D’autres services média / photo sont en cours de validation.
 
 ---
 
-## Routage de Couche 7 & Flux Réseau
+## Dans le cluster K3s (VLAN 20)
 
-L'aiguillage du trafic vers le cluster est segmenté selon la sensibilité des applications :
+Le cluster (3 nœuds) gère les services conteneurisés via ArgoCD (GitOps).
 
-```mermaid
-flowchart TD
+| Service          | Namespace   | Exposition              | Accès                      | Stockage          |
+|------------------|-------------|-------------------------|----------------------------|-------------------|
+| Cloudflare Tunnel| networking  | Sortant uniquement      | —                          | Aucun             |
+| Traefik          | kube-system | Ingress                 | Routage interne / public   | Aucun             |
+| Prometheus       | monitoring  | Traefik (interne)       | Admin uniquement           | PVC local         |
+| Grafana          | monitoring  | Traefik → WG            | grafana.local.lan          | PVC local         |
+| Portfolio        | web         | CF Tunnel → Traefik     | Domaine public             | PVC / assets      |
+| Vaultwarden      | —           | Traefik / WG            | Interne                    | PVC               |
+| Velero           | —           | —                       | Sauvegardes cluster        | S3 (MinIO)        |
 
-%% ============================
-%% PUBLIC TRAFFIC PATH
-%% ============================
-
-subgraph PUBLIC["Trafic Public"]
-    A[Client Public]
-end
-
-A --> B[Cloudflare WAF]
-B --> C["Cloudflare Tunnel (cloudflared)"]
-C --> D[Traefik Ingress]
-
-%% Web Namespace
-subgraph WEB["Namespace : web"]
-    P1["MD Portfolio (Exposé Public)"]
-end
-
-D --> P1
-
-
-%% ============================
-%% PRIVATE TRAFFIC PATH
-%% ============================
-
-subgraph PRIVATE["Trafic Privé"]
-    X[Client Privé / Admin]
-end
-
-X --> Y[WireGuard LAN]
-Y --> D
-
-
-%% Monitoring / Tools Namespace
-subgraph MONTOOLS["Namespaces : monitoring / tools"]
-    M1[Grafana]
-    M2[Dozzle]
-    M3[BenToPDF]
-end
-
-D --> M1
-D --> M2
-D --> M3
-
-```
-
-1. **Exposition Publique (Zéro-Trust)** : Le service `Cloudflare` est le seul point d'entrée public. Le démon `cloudflared` (sans stockage, namespace `networking`) établit une connexion sortante sécurisée vers Cloudflare. Les règles de sécurité réseau interdisent au tunnel de communiquer avec un autre pod que celui du traefik.
-
-2. **Routage Interne / Administration** : Les outils d'infrastructure (`Grafana`, `Prometheus`, `Dozzle`) transitent par l'Ingress **Traefik**. Ils utilisent des domaines en `.local.lan` et leur accès est filtré au niveau de la couche réseau (Calico / OPNsense) pour n'autoriser que les adresses IP d'administration authentifiées (via réseau local ou VPN WireGuard).
+Les politiques Calico limitent les communications entre pods (ex. : le tunnel Cloudflare ne peut parler qu’à Traefik).
 
 ---
 
-## Cycle de Vie des Données & Stratégie de Stockage
+## Routage
 
-La persistance des données au sein du homelab est construite sur trois niveaux de criticité et d'infrastructure :
+**Trafic public**  
+Client → Cloudflare (WAF) → Tunnel cloudflared → Traefik → service (ex. portfolio)
 
-### 1. Persistance Kubernetes (PV/PVC local-lvm)
-Pour les services orchestrés dans K3s, la persistance s'appuie sur le stockage rapide `local-lvm` de chaque nœud physique (`pve2`, `pve3`, `pve4`).  
-Le cycle de vie est directement lié à l'application via les *PersistentVolumeClaims* (ex: rétention des métriques dans `prometheus-pvc`, configuration de `grafana-pvc`, génération de documents dans `bento-pvc`).
+**Trafic d’administration**  
+Client → WireGuard → Traefik → services internes (Grafana, etc.)
 
-### 2. Haute Disponibilité Distribuée (Ceph)
-Les machines virtuelles de production WordPress (`hantaweb` et `petitsanglais`) ainsi que les racines des conteneurs LXC multimédias exploitent le cluster **Ceph partagé**.  
-Grâce à un facteur de réplication de `3 min 2` distribué sur `pve2/pve3/pve4`, n'importe quel nœud de calcul peut tomber en panne sans provoquer d'interruption de service ou de perte de données sur ces disques systèmes.
-
-### 3. Stockage de Masse Massif (NAS ZFS & MinIO)
-Le **NAS Bare-Metal** constitue le cœur de la persistance des données volumineuses du homelab.  
-Configuré sous Debian avec un groupe **ZFS RAID-Z2 (6 × 1 TB)**, il offre une double tolérance à la panne de disques.
-
-- **Partages Réseau** : Utilisés directement par `Jellyfin` et `Photoprism` pour stocker les bibliothèques de médias et de photos.  
-- **Stockage d'Objets S3** : Exposition d'un endpoint canonicalisé via **MinIO** pour la gestion des sauvegardes et le stockage d'objets cloud-native.
+Aucun port n’est ouvert en entrée sur l’IP publique.
 
 ---
 
-* **[Suivant : Sécurité →](/security.html)**
-* **[← Accueil](/index.html)**
+## Stratégie de stockage
+
+| Type de données              | Emplacement              | Raison                                      |
+|------------------------------|--------------------------|---------------------------------------------|
+| Disques système K3s / etcd   | local-lvm                | Latence minimale pour etcd                  |
+| VMs WordPress                | Ceph                     | HA / migration en cas de panne d’un nœud    |
+| Bibliothèques média          | NAS (ZFS) via NFS        | Volume important + double tolérance disque  |
+| State Terraform + backups    | MinIO (S3) sur NAS       | Object storage + object lock                |
+| PVC applicatifs K3s          | local-lvm (par nœud)     | Simplicité et performance                   |
+
+---
+
+## Statut (août 2026)
+
+| Catégorie                    | État                          |
+|------------------------------|-------------------------------|
+| VMs WordPress                | Production                    |
+| Jellyfin                     | Production                    |
+| Stack monitoring (Prometheus/Grafana) | Opérationnelle          |
+| Portfolio (dans K3s)         | Déployé / en stabilisation    |
+| Autres services GitOps       | Migration progressive         |
+
+---
+
+**Pages liées :**
+
+- [← Sécurité](/security.html)
+- [Sauvegarde →](/backup-strategy.html)
+- [Rétrospective →](/lessons-learned.html)
