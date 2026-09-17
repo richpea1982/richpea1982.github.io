@@ -19,4 +19,4 @@ jobs:
       - name: Install markdownlint
         run: npm install --no-save markdownlint-cli2
       - name: Lint markdown
-        run: ./node_modules/.bin/markdownlint-cli2
+        run: ./node_modules/.bin/markdownlint-cli2 "**/*.md" "!**/node_modules/**"
