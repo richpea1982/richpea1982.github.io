@@ -31,19 +31,23 @@ L’architecture actuelle n’est pas née d’un coup. Elle s’est construite 
 L’environnement est divisé en deux plans clairement séparés :
 
 **1. Plan de gestion (hors cluster de calcul)**  
+
 - **pve1** : OPNsense (pare-feu / routage), Proxmox Backup Server, nœud d’automatisation (Semaphore + Ansible).  
 - **NAS bare-metal** : Debian + ZFS RAID-Z2 (6 × 1 To) + MinIO (stockage objet S3).
 
 **2. Plan de calcul (cluster Proxmox + Ceph)**  
+
 - **pve2, pve3, pve4** : hyperviseurs Proxmox en cluster avec stockage Ceph.  
 - Hébergent les VMs WordPress publiques, les nœuds K3s et les LXC média.
 
 **Réseau**  
+
 - Segmentation en VLANs (management, interne, média, DMZ, untrusted).  
 - Exposition publique uniquement via **Cloudflare Tunnels** (aucun port ouvert en entrée).  
 - Accès d’administration via overlay WireGuard / Tailscale.
 
 **Kubernetes**  
+
 - Cluster K3s à 3 nœuds (etcd embarqué + kube-vip).  
 - Bootstrap et configuration de base gérés par Ansible.  
 - Déploiements applicatifs gérés ensuite en GitOps via ArgoCD.

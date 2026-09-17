@@ -1,7 +1,9 @@
 config:
   default: true
-  MD013:
-    line_length: 120
-  MD033: false
-  MD041: false
+  MD013: false # prose paragraphs are written one-line-per-paragraph by choice
+  MD025: false # front matter title + in-body H1 is the project's convention
+  MD029: false # "ajouts à la liste existante" lists continue prior numbering
+  MD033: false # inline HTML used intentionally (details/summary, badges)
+  MD041: false # first line of file is not an H1 (front matter provides title)
   MD047: true
+  MD060: false # table column alignment is not meaningful for this site

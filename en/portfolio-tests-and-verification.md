@@ -62,4 +62,3 @@ It also surfaced a concrete, well-scoped piece of future work: extending
 the cluster-bootstrap Ansible role with a dedicated
 restore-from-snapshot path, so the next recovery is fully automated
 rather than requiring manual intervention.
-

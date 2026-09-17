@@ -14,7 +14,7 @@ No secrets are stored in clear text in the Git repositories.
 ## Secrets management
 
 | Layer | Tool | Content |
-|-------|------|---------|
+| ------- | ------ | --------- |
 | Pre-vault / bootstrap | **Semaphore** (automation node) | SSH keys, Proxmox credentials and secrets needed before the vault can be unlocked |
 | Provisioning | **Ansible Vault** (`vault.yml`) | K3s tokens, MinIO passwords, Semaphore credentials, etc. |
 | Runtime (cluster) | **Kubernetes Secrets** | Secrets consumed by pods (environment variables, internal certificates) |
@@ -36,7 +36,7 @@ No secrets are stored in clear text in the Git repositories.
 ## Network and perimeter security
 
 | Layer | Mechanism | Role |
-|-------|-----------|------|
+| ------- | ----------- | ------ |
 | Perimeter | OPNsense (default drop) + VLANs | Strict inter-VLAN filtering |
 | Public ingress | Cloudflare Tunnels only | No inbound ports open |
 | Cluster (L3) | Calico NetworkPolicy | Pod micro-segmentation |

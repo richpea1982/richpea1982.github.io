@@ -46,11 +46,13 @@ Toute communication non explicitement autorisée est rejetée.
 Deux canaux distincts, aucun port-forwarding sur la box ISP.
 
 **1. Services publics**  
+
 - Cloudflare Tunnels uniquement.  
 - Le démon `cloudflared` tourne dans le cluster K3s et établit une connexion sortante.  
 - Le trafic arrive sur Traefik après inspection Cloudflare (WAF / DDoS).
 
 **2. Accès d’administration**  
+
 - WireGuard (self-hosted).  
 - Connexion sortante depuis OPNsense vers un VPS relais (contournement CGNAT).  
 - Seuls les flux d’administration authentifiés sont autorisés vers les VLANs 10 et 20.

@@ -49,20 +49,26 @@ graph TD
 ## 🛠️ Implémentation Technique des Outils de Sauvegarde
 
 ### 1. Sauvegarde Applicative Kubernetes (Velero)
+
 Dédié à la capture de l'état logique interne du cluster K3s et de ses données persistantes.
+
 * **Fonctionnement** : Déployé comme un opérateur au sein du cluster, **Velero** interroge l'API Kubernetes pour sauvegarder les manifests (CRDs, Secrets, ConfigMaps, Ingress) et orchestre la capture des volumes persistants (PV) via son plug-in de snapshot natif (ou intégration Kopia/Restic).
 * **Destination** : Les sauvegardes sont poussées directement vers un compartiment dédié sur l'instance **MinIO S3** s'exécutant sur le NAS Bare-Metal.
 * **Avantage Clé** : Permet une restauration granulaire au niveau de l'orchestrateur (ex: restaurer un seul namespace ou annuler un déploiement corrompu) sans avoir à restaurer l'intégralité de la VM sous-jacente.
 
 ### 2. Sauvegarde Niveau Bloc (Proxmox Backup Server)
+
 Dédié à la restauration rapide et complète de l'enveloppe matérielle virtuelle.
+
 * **Fonctionnement** : La VM spécialisée `PBS` (sur `pve1`) effectue des snapshots incrémentaux au niveau bloc avec déduplication globale.
-* **Périmètre** : 
-    * OS et disques système des nœuds K3s (`2021-2023`) situés sur le datastore `local-lvm`.
-    * Instances d'applications étatiques hors-K3s (`hantaweb`, `petitsanglais`, `Seafile`) s'exécutant sur le pool répliqué `ceph-storage`.
+* **Périmètre** :
+  * OS et disques système des nœuds K3s (`2021-2023`) situés sur le datastore `local-lvm`.
+  * Instances d'applications étatiques hors-K3s (`hantaweb`, `petitsanglais`, `Seafile`) s'exécutant sur le pool répliqué `ceph-storage`.
 
 ### 3. Sauvegarde Fichiers (Restic CLI)
+
 Dédié à la capture granulaire des données du stockage de masse non conteneurisé.
+
 * **Fonctionnement** : Restic sauvegarde, déduplique et chiffre les données côté client au niveau du système de fichiers du NAS Bare-Metal et des volumes lourds montés par les LXCs (Jellyfin, Photoprism).
 * **Destination** : Poussé vers un espace de stockage local, puis dupliqué sur un disque externe USB amovible.
 
@@ -85,7 +91,7 @@ Pour parer aux sinistres physiques (incendie, vol, dégât des eaux), la couche 
 | **Velero (K3s Apps & PVs)** | Quotidien (01:00) | MinIO S3 (NAS) | `7 jours` |
 | **PBS (Snapshots VMs)** | Quotidien (02:00) | Datastore PBS (`pve1`) | `keep-last=7, weekly=4, monthly=12` |
 | **Restic (Données NAS)** | Quotidien (04:00) | SSD Local + USB | `keep-daily=7, weekly=4, monthly=6` |
-| **Réplication Cloud (Cible)**| Hebdomadaire | Backblaze B2 / AWS S3 | Identique à la rétention locale |
+| **Réplication Cloud (Cible)** | Hebdomadaire | Backblaze B2 / AWS S3 | Identique à la rétention locale |
 
 ---
 

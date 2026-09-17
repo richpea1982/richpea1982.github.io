@@ -14,7 +14,7 @@ Aucun secret n’est stocké en clair dans les dépôts Git.
 ## Gestion des secrets
 
 | Couche | Outil | Contenu |
-|--------|-------|---------|
+| -------- | ------- | --------- |
 | Pré-vault / bootstrap | **Semaphore** (nœud d’automatisation) | Clés SSH, credentials Proxmox et secrets nécessaires avant le déchiffrement du vault |
 | Provisioning | **Ansible Vault** (`vault.yml`) | Jetons K3s, mots de passe MinIO, credentials Semaphore, etc. |
 | Runtime (cluster) | **Kubernetes Secrets** | Secrets consommés par les pods (variables d’environnement, certificats internes) |
@@ -36,7 +36,7 @@ Aucun secret n’est stocké en clair dans les dépôts Git.
 ## Sécurité réseau et périmétrique
 
 | Couche | Mécanisme | Rôle |
-|--------|-----------|------|
+| -------- | ----------- | ------ |
 | Périmètre | OPNsense (default drop) + VLANs | Filtrage inter-VLAN strict |
 | Ingress public | Cloudflare Tunnels uniquement | Aucun port ouvert en entrée |
 | Cluster (L3) | Calico NetworkPolicy | Micro-segmentation des pods |

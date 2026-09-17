@@ -23,17 +23,20 @@ Le README du dépôt `infra-homelab` est la source de vérité.
 Le workflow se déroule en trois couches :
 
 **1. Provisioning (Terraform)**  
+
 - Crée les VMs et LXC sur Proxmox (module `bpg/proxmox`).  
 - Injecte les clés SSH, la configuration réseau (VLAN + IP statique) et active qemu-guest-agent.  
 - State stocké sur MinIO (NAS).
 
 **2. Configuration et bootstrap (Ansible)**  
+
 - Durcissement OS, paquets de base, configuration SSH.  
 - Déploiement du cluster K3s (3 nœuds, etcd embarqué, kube-vip).  
 - Installation d’ArgoCD + injection de la deploy key SSH vers le dépôt `k3s`.  
 - Configuration du NAS (ZFS, NFS, MinIO) et des rôles annexes (smartctl exporter, alert router…).
 
 **3. GitOps (ArgoCD)**  
+
 - Une fois le cluster et ArgoCD en place, Ansible n’intervient plus sur les applications.  
 - ArgoCD synchronise en continu les manifests du dépôt `k3s` (Traefik, CrowdSec, monitoring, Cloudflare Tunnel, portfolio, Vaultwarden, Velero, etc.).
 
