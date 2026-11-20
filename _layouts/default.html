@@ -1,0 +1,48 @@
+---
+layout: null
+---
+
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: 'fr' }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{ page.description | default: site.description | escape }}">
+  <title>{{ page.title }} — {{ site.title }}</title>
+
+  <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap">
+</head>
+
+<body>
+
+  <div class="sidebar">
+    <h2 class="sidebar-title">Portfolio</h2>
+    <ul class="nav-list">
+      <li><a href="{{ '/' | relative_url }}">Accueil</a></li>
+      <li><a href="{{ '/infrastructure.html' | relative_url }}">Infrastructure</a></li>
+      <li><a href="{{ '/iac-automation.html' | relative_url }}">IaC &amp; automatisation</a></li>
+      <li><a href="{{ '/portfolio-tests-and-verification.html' | relative_url }}">Reprise après sinistre</a></li>
+      <li><a href="{{ '/groupemen.html' | relative_url }}">Projet Groupemen</a></li>
+    </ul>
+  </div>
+
+  <main class="content">
+
+    <header class="site-profile-header" style="margin-bottom: 30px;">
+      <h1>Richard Pearsall</h1>
+      <p><strong>Administration systèmes et réseaux · Infrastructure as Code · Linux · Réseaux &amp; sécurité</strong></p>
+      <p>
+        <a href="mailto:rpearsall1982@gmail.com">Courriel</a>
+      </p>
+      <hr style="border: 0; border-top: 2px solid var(--nord3); margin-top: 20px;">
+    </header>
+
+    {{ content }}
+
+  </main>
+
+</body>
+</html>

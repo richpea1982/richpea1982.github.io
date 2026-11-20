@@ -1,0 +1,188 @@
+/* ============================
+   NORD COLOR PALETTE
+   ============================ */
+:root {
+  --nord0: #2e3440;
+  --nord1: #3b4252;
+  --nord2: #434c5e;
+  --nord3: #4c566a;
+  --nord4: #d8dee9;
+  --nord5: #e5e9f0;
+  --nord6: #eceff4;
+  --nord7: #8fbcbb;
+  --nord8: #88c0d0;
+  --nord9: #81a1c1;
+  --nord10: #5e81ac;
+}
+
+/* ============================
+   GLOBAL
+   ============================ */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--nord0);
+  color: var(--nord6);
+  font-family: 'JetBrains Mono', monospace;
+  /* Removed display: flex to restore normal document alignment flow */
+}
+
+/* ============================
+   SIDEBAR
+   ============================ */
+.sidebar {
+  width: 260px;
+  background: var(--nord1);
+  padding: 20px;
+  height: 100vh;
+  position: fixed;
+  overflow-y: auto;
+  border-right: 2px solid var(--nord3);
+}
+
+.sidebar-title {
+  color: var(--nord8);
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+}
+
+.nav-list li {
+  margin: 12px 0;
+}
+
+.nav-list a {
+  color: var(--nord6);
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.nav-list a:hover {
+  color: var(--nord8);
+}
+
+/* ============================
+   CONTENT AREA
+   ============================ */
+.content {
+  /* Center the content container within the available space */
+  margin: 0 auto; 
+  padding: 40px;
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+
+  /* Shift the centered block right to cleanly clear the fixed sidebar */
+  position: relative;
+  left: 130px; /* Shifts center point by exactly half of your sidebar width */
+}
+
+/* ============================
+   HEADINGS
+   ============================ */
+h1, h2, h3 {
+  color: var(--nord8);
+}
+
+/* ============================
+   CODE BLOCKS
+   ============================ */
+/* Large multi-line code blocks */
+pre {
+  background: var(--nord1);
+  color: var(--nord6);
+  padding: 15px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 15px 0;
+}
+
+/* Small inline code bubbles `like this` */
+p code, 
+li code,
+td code {
+  background: var(--nord1);
+  color: var(--nord6);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  
+  /* Fixes the overlap by locking the bubble inside the line height */
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+/* ============================
+   TABLES
+   ============================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+table th, table td {
+  border: 1px solid var(--nord3);
+  padding: 10px;
+}
+
+table th {
+  background: var(--nord2);
+}
+
+table td {
+  background: var(--nord1);
+}
+
+/* ============================
+   LINKS
+   ============================ */
+a {
+  color: var(--nord8);
+}
+
+a:hover {
+  color: var(--nord7);
+}
+
+/* ============================
+   TEXT CONTRAST & MINIMA OVERRIDES
+   ============================ */
+
+/* Main body text */
+.content p,
+.content li,
+.content blockquote,
+.content span {
+  color: var(--nord5); /* Bright off-white for maximum readability */
+  line-height: 1.6;
+}
+
+/* Bold and italic text */
+.content strong,
+.content b {
+  color: var(--nord6); /* Pure white for emphasis */
+}
+
+/* Links (Using !important to guarantee Minima doesn't override) */
+.content a {
+  color: var(--nord8) !important; 
+}
+
+.content a:hover {
+  color: var(--nord7) !important;
+}
+
+/* Table Content */
+.content table th {
+  color: var(--nord8); /* Frost blue for table headers */
+}
+    
+.content table td {
+  color: var(--nord5);
+}

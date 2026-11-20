@@ -1,0 +1,22 @@
+theme: minima
+markdown: kramdown
+kramdown:
+  input: GFM
+
+title: Richard Pearsall — Portfolio
+description: Administration systèmes et réseaux, infrastructure as code, Linux, réseaux et sécurité — présentation d'un homelab.
+url: https://richpea1982.github.io
+baseurl: ""
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+      lang: fr
+
+exclude:
+  - AGENTS.md
+  - opencode.jsonc
+  - README.md
+  - .github
