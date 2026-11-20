@@ -91,14 +91,27 @@ h1, h2, h3 {
 /* ============================
    CODE BLOCKS
    ============================ */
-/* Large multi-line code blocks */
-pre {
-  background: var(--nord1);
-  color: var(--nord6);
+/* Large multi-line code blocks and fenced diagrams (Rouge wraps them in .highlight) */
+.content pre,
+.content pre code,
+.content .highlight,
+.content .highlighter-rouge .highlight {
+  background: var(--nord1) !important;
+  color: var(--nord6) !important;
+}
+
+.content pre {
   padding: 15px;
+  border: 1px solid var(--nord3);
   border-radius: 6px;
   overflow-x: auto;
   margin: 15px 0;
+}
+
+.content pre code {
+  display: block;
+  padding: 0;
+  white-space: pre;
 }
 
 /* Small inline code bubbles `like this` */

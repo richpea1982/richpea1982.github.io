@@ -7,7 +7,7 @@ lang: fr
 
 # Projet Groupemen — environnement Windows de pré-production
 
-Dans le cadre d'un stage d'administration systèmes et réseaux, j'ai construit de bout en bout un environnement Windows isolé reproduisant un modèle d'identité de production. Il sert de support aux équipes développement et systèmes pour intégrer des services sans toucher à la production. La publication de cette description a été autorisée ; aucun nom de domaine interne, aucune adresse IP et aucun identifiant n'est divulgué.
+Dans le cadre d'un stage d'administration systèmes et réseaux, j'ai construit de bout en bout un environnement Windows isolé reproduisant un modèle d'identité de production. Il sert de support aux équipes développement et systèmes pour intégrer des services sans toucher à la production.
 
 ## Topologie
 
